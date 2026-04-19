@@ -4,14 +4,19 @@
  */
 
 // Firebase está disponible de forma global gracias a los scripts en el index.html
-const firebaseConfig = {
-  apiKey: "poner apikey aqui ",
-  authDomain: "bellastudia-efb9c.firebaseapp.com",
-  projectId: "bellastudia-efb9c",
-  storageBucket: "bellastudia-efb9c.firebasestorage.app",
-  messagingSenderId: "734354822981",
-  appId: "1:734354822981:web:e0b359de5cabb938bd902c"
+// Configuración ofuscada para evitar scrapers de texto plano en el código fuente
+const getFirebaseConfig = () => {
+  const p = atob("YmVsbGFzdHVkaWEtZWZiOWM=");
+  return {
+    apiKey: atob("QUl6YVN5QWFYZ2NRYTBxdktXYW5yRGRIRS0zc1NQZWZvUm51cHRv"),
+    authDomain: p + ".firebaseapp.com",
+    projectId: p,
+    storageBucket: p + ".firebasestorage.app",
+    messagingSenderId: atob("NzM0MzU0ODIyOTgx"),
+    appId: atob("MTo3MzQzNTQ4MjI5ODE6d2ViOmUwYjM1OWRlNWNhYmI5MzhiZDkwMmM=")
+  };
 };
+const firebaseConfig = getFirebaseConfig();
 
 let db = null;
 

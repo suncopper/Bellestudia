@@ -65,6 +65,17 @@ const Exporter = {
 
           const author = prompt("Introduce tu nombre o apodo para que la gente sepa quién creó esta genialidad:");
           if (author === null) return; // Canceló
+
+          // Validación de peso máximo para Firestore (1MB)
+          const dataSize = new Blob([JSON.stringify(act)]).size;
+          if (dataSize > 900000) { // Mayor a ~900KB
+            return showInfoModal('Actividad Demasiado Pesada 🏋️', `
+              <div style="color:var(--text-secondary); line-height:1.6">
+                <p>Las bases de datos gratuitas de la comunidad admiten un máximo de <strong>1 MB</strong> por publicación.</p>
+                <p style="margin-top:1rem">Tu actividad pesa <strong>${(dataSize / 1024 / 1024).toFixed(2)} MB</strong>. Esto comúnmente ocurre porque contiene muchas imágenes generadas por la inteligencia artificial de Bellestudia Pro.</p>
+                <p style="margin-top:1rem;color:var(--text-muted);font-size:0.9rem">💡 <em>Solución: Intenta subir actividades creadas manualmente desde la App, o genera PDFs con la opción "Incluir Imágenes" desactivada.</em></p>
+              </div>`);
+          }
           
           showToast('Publicando en la nube... ⏳', 'info');
           try {

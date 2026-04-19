@@ -149,14 +149,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (imgData && (imgData.bitmap || imgData.data)) {
             try {
+              let destW = imgData.width;
+              let destH = imgData.height;
+              const MAX_DIM = 600; // Reducir drásticamente la resolución máxima
+              if (destW > MAX_DIM || destH > MAX_DIM) {
+                const ratio = Math.min(MAX_DIM / destW, MAX_DIM / destH);
+                destW = Math.round(destW * ratio);
+                destH = Math.round(destH * ratio);
+              }
+
               const canvas = document.createElement('canvas');
-              canvas.width = imgData.width;
-              canvas.height = imgData.height;
+              canvas.width = destW;
+              canvas.height = destH;
               const ctx = canvas.getContext('2d');
               
               if (imgData.bitmap) {
-                ctx.drawImage(imgData.bitmap, 0, 0);
+                ctx.drawImage(imgData.bitmap, 0, 0, destW, destH);
               } else {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = imgData.width;
+                tempCanvas.height = imgData.height;
+                const tempCtx = tempCanvas.getContext('2d');
+
                 const rgbaData = new Uint8ClampedArray(imgData.width * imgData.height * 4);
                 if (imgData.data.length === imgData.width * imgData.height * 3) {
                   for (let j = 0, k = 0; j < imgData.data.length; j += 3, k += 4) {
@@ -168,12 +182,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                   rgbaData.set(imgData.data);
                 }
-                ctx.putImageData(new ImageData(rgbaData, imgData.width, imgData.height), 0, 0);
+                tempCtx.putImageData(new ImageData(rgbaData, imgData.width, imgData.height), 0, 0);
+                // Pintar con escala
+                ctx.drawImage(tempCanvas, 0, 0, destW, destH);
               }
 
-              if (canvas.width > 20 && canvas.height > 20) {
-                // Cambiado de PNG a JPEG 0.7 para ahorrar espacio masivamente
-                const url = canvas.toDataURL('image/jpeg', 0.7);
+              if (destW > 20 && destH > 20) {
+                // Cambiado a JPEG 0.5 para máxima compresión web
+                const url = canvas.toDataURL('image/jpeg', 0.5);
                 if (!extracted.includes(url)) extracted.push(url);
               }
             } catch(e) {}
@@ -187,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Renderiza la página completa como una imagen para asegurar que la IA vea todo
-  async function renderPageToImage(page, scale = 1.3) {
+  async function renderPageToImage(page, scale = 0.8) {
     const viewport = page.getViewport({ scale });
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -199,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
       viewport: viewport
     }).promise;
 
-    return canvas.toDataURL('image/jpeg', 0.6); // Bajamos un poco más la calidad para backup de páginas
+    return canvas.toDataURL('image/jpeg', 0.4); // Super compresión para la IA (sólo la necesita como referencia)
   }
 
   // Helper de Reintentos (Exponential Backoff) para Gemini

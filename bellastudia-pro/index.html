@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bellestudia Pro — AI Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Fondo animado moderno -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-grid"></div>
+
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo">
+        <img src="assets/logo.png" alt="Bellestudia" class="app-logo" id="main-logo" onerror="this.outerHTML='<div class=\'logo-icon\'>✨</div>'">
+        <h1>Bellestudia<span>Pro</span></h1>
+      </div>
+      <p class="subtitle">Transforma cualquier PDF en actividades interactivas al instante</p>
+    </header>
+
+    <main class="main-content">
+      
+      <!-- Paso 1: Configurar Key -->
+      <section class="card glass-card">
+        <div class="card-header">
+          <span class="step-num">1</span>
+          <h2>Configuración de la IA</h2>
+        </div>
+        <div class="api-key-container">
+          <label for="gemini-key">Google Gemini API Key</label>
+          <div class="input-with-button">
+            <input type="password" id="gemini-key" placeholder="AIzaSyA..." autocomplete="off">
+            <button class="btn btn-icon" id="toggle-key-visibility" title="Mostrar/Ocultar" aria-label="Mostrar u ocultar clave">👁️</button>
+          </div>
+          <div class="key-help">
+            <p><strong>¿No tienes una API Key?</strong> Es gratis y toma 1 minuto:</p>
+            <ol>
+              <li>Ve a <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> y entra con tu cuenta de Google.</li>
+              <li>Haz clic en el botón azul <strong>"Create API Key"</strong>.</li>
+              <li>Copia el código largo que se genera y pégalo aquí.</li>
+            </ol>
+            <p class="small-text text-muted">Aviso: Tu clave se guarda de forma segura en tu propio navegador, jamás se envía a nuestros servidores (porque no tenemos servidores 😉).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Paso 2: Subir PDF -->
+      <section class="card glass-card">
+        <div class="card-header">
+          <span class="step-num">2</span>
+          <h2>Sube tu Documento</h2>
+        </div>
+        <div class="pdf-upload-zone" id="drop-zone">
+          <input type="file" id="pdf-file" accept="application/pdf" hidden>
+          <div class="upload-icon">📄</div>
+          <h3>Arrastra tu archivo PDF aquí</h3>
+          <p>o</p>
+          <button class="btn btn-secondary" onclick="document.getElementById('pdf-file').click()">Explorar archivos</button>
+          <div class="file-info" id="file-info" style="display:none;">
+            <span class="file-name" id="file-name">archivo.pdf</span>
+            <span class="file-size" id="file-size">(2 MB)</span>
+            <button class="btn-remove" id="btn-remove-file" title="Quitar">✖</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Paso 3: Configurar Actividad -->
+      <section class="card glass-card">
+        <div class="card-header">
+          <span class="step-num">3</span>
+          <h2>Diseñar Actividad</h2>
+        </div>
+        <!-- Opciones de Generación -->
+        <div class="activity-config-grid">
+          <div class="config-group">
+            <label class="form-label">Tipo de Actividad</label>
+            <div class="activity-types">
+              <label class="radio-card">
+                <input type="radio" name="act-type" value="quiz" checked>
+                <div class="rc-content">
+                  <span class="rc-icon">🎯</span>
+                  <span class="rc-title">Quiz</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="act-type" value="truefalse">
+                <div class="rc-content">
+                  <span class="rc-icon">✅</span>
+                  <span class="rc-title">V/F</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="act-type" value="matching">
+                <div class="rc-content">
+                  <span class="rc-icon">🔗</span>
+                  <span class="rc-title">Unir</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="act-type" value="memory" >
+                <div class="rc-content">
+                  <span class="rc-icon">🃏</span>
+                  <span class="rc-title">Memoria</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="act-type" value="dragdrop">
+                <div class="rc-content">
+                  <span class="rc-icon">🧩</span>
+                  <span class="rc-title">Arrastrar</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="config-extras">
+            <div class="input-wrap">
+              <label for="q-count">Cantidad de ítems</label>
+              <input type="number" id="q-count" min="1" max="50" value="10">
+            </div>
+            <div class="input-wrap">
+              <label for="q-lang">Idioma</label>
+              <select id="q-lang">
+                <option value="Español">Español</option>
+                <option value="English">English</option>
+                <option value="Italiano">Italiano</option>
+                <option value="Português">Português</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Nueva opción de imágenes mejor integrada -->
+          <div class="config-group" style="margin-top:0.5rem">
+            <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer; background:rgba(138,43,226,0.05); padding:1rem; border-radius:var(--radius-md); border:1px solid var(--border)">
+              <input type="checkbox" id="include-images" checked style="width:20px; height:20px; accent-color:var(--primary)">
+              <div style="flex:1">
+                <div style="color:var(--text-main); font-weight:600; font-size:0.95rem">📸 Incluir imágenes automáticas</div>
+                <div style="color:var(--text-muted); font-size:0.8rem">La IA usará diagramas y fotos del PDF en las actividades.</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Acción principal -->
+      <div class="action-bar">
+        <button class="btn btn-primary btn-lg" id="btn-generate">
+          <span class="btn-icon">✨</span> Generar actividad
+        </button>
+      </div>
+
+    </main>
+
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p>Bellestudia Pro — Optimizando tu estudio (Al menos eso intentamos)</p>
+        <button id="btn-download-portable" class="btn-link">📦 Descargar App Portable (.html)</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Modal de Progreso -->
+  <div class="modal-overlay" id="loading-modal">
+    <div class="modal-content glass-card loading-card">
+      <div class="loader-img-wrap" style="margin-bottom:1rem;">
+        <img src="assets/logo.png" alt="Cargando" width="80" class="glitch-logo" onerror="this.outerHTML='<div class=\'logo-icon\'>✨</div>'">
+      </div>
+      <h2 id="loading-title">Analizando Documento...</h2>
+      
+      <div class="progress-container" style="margin: 1.5rem 0; text-align: left;">
+        <div class="progress-bar-bg" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+          <div id="loading-pb-fill" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s ease;"></div>
+        </div>
+        <p id="loading-status-text" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">Preparando lector PDF...</p>
+      </div>
+
+      <p id="loading-desc">Extrayendo imágenes y generando las preguntas. No cierres esta pestaña.</p>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Incluir scripts (PDF.js y lógica) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    // Configurar worker de pdf.js
+    if(window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    }
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>

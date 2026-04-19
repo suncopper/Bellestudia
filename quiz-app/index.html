@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Bellestudia — Crea y juega actividades educativas interactivas: quizzes, verdadero/falso, drag & drop, conexión de términos y juegos de memoria. Sin servidor ni instalación.">
+  <title>Bellestudia — Actividades Interactivas</title>
+
+  <!-- Fuentes locales (sin internet) -->
+  <link rel="stylesheet" href="css/fonts.css">
+
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/creator.css">
+  <link rel="stylesheet" href="css/player.css">
+
+  <!-- Firebase (Compat v10) - Cloud Database para la Comunidad -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ════════════ HEADER ════════════ -->
+  <header id="app-header">
+    <nav class="nav-container">
+      <div class="nav-logo" id="btn-home" role="button" tabindex="0" aria-label="Ir al inicio">
+        <img src="assets/logo.png" alt="Bellestudia Logo" style="height:32px; border-radius:6px; object-fit:cover;" onerror="this.outerHTML='<span class=\'logo-icon\'>🦝</span>'">
+        <span class="logo-text">Bellestudia</span>
+      </div>
+      <div class="nav-actions">
+        <button class="btn btn-ghost btn-sm nav-action-btn" id="nav-btn-dashboard" title="Tus Actividades" style="font-weight:bold;">🏠 <span class="nav-btn-label">Tus Actividades</span></button>
+        <button class="btn btn-ghost btn-sm nav-action-btn" id="nav-btn-community" title="Explorar la Comunidad Mundial">🌍 <span class="nav-btn-label">Comunidad</span></button>
+        <button class="btn btn-ghost btn-sm nav-action-btn" id="btn-import" title="Importar actividad (Archivo)">📥 <span class="nav-btn-label">Importar</span></button>
+        <button class="btn btn-primary" id="btn-new-activity">+ Nueva Actividad</button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ════════════ MAIN ════════════ -->
+  <main id="app-main">
+
+    <!-- ── DASHBOARD ── -->
+    <section id="view-dashboard" class="view active">
+      <div class="container">
+        <div class="dashboard-hero">
+          <h1 class="hero-title">Tus Actividades</h1>
+          <p class="hero-subtitle">Crea, edita y juega actividades educativas sin necesitar internet</p>
+        </div>
+        <div class="stats-bar" id="stats-bar"></div>
+
+        <!-- Subject / Topic filter (shown when activities have subjects) -->
+        <div class="subject-filter-section" id="filter-section" style="display:none"></div>
+
+        <div class="activities-grid" id="activities-grid"></div>
+        <div class="empty-state" id="empty-state" style="display:none">
+          <div class="empty-icon">📚</div>
+          <h2>¡Crea tu primera actividad!</h2>
+          <p>Usa el botón "Nueva Actividad" para comenzar</p>
+          <button class="btn btn-primary btn-lg" id="btn-new-activity-empty">+ Nueva Actividad</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── COMMUNITY ── -->
+    <section id="view-community" class="view">
+      <div class="container">
+        <div class="dashboard-hero">
+          <h1 class="hero-title">Comunidad Bellestudia 🌍</h1>
+          <p class="hero-subtitle">Explora, descarga y juega actividades compartidas por otros profesores y estudiantes.</p>
+        </div>
+        
+        <div class="stats-bar">
+          <div class="stat-item" style="border:none">
+            <span class="stat-value" id="comm-total-stats">-</span>
+            <span class="stat-label">Actividades Recientes encontradas. Importa la que desees para agregarla a tu biblioteca.</span>
+          </div>
+        </div>
+
+        <div class="activities-grid" id="community-grid">
+          <!-- Spinner mientras carga -->
+          <p style="color:var(--text-muted); font-size:1.1rem; grid-column:1/-1; text-align:center; padding: 3rem;">
+            Cargando la base centralizada... ⏳
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TYPE SELECTOR ── -->
+    <section id="view-type-selector" class="view">
+      <div class="container">
+        <div class="view-header">
+          <button class="btn btn-back" id="btn-back-selector">← Volver</button>
+          <h1>Selecciona el Tipo de Actividad</h1>
+        </div>
+        <div class="type-grid">
+          <button class="type-card" data-type="quiz">
+            <div class="type-icon">🎯</div>
+            <div class="type-name">Quiz</div>
+            <div class="type-desc">Preguntas de opción múltiple con puntuación</div>
+          </button>
+          <button class="type-card" data-type="truefalse">
+            <div class="type-icon">✅</div>
+            <div class="type-name">Verdadero / Falso</div>
+            <div class="type-desc">Afirmaciones para clasificar como V o F</div>
+          </button>
+          <button class="type-card" data-type="dragdrop">
+            <div class="type-icon">🧩</div>
+            <div class="type-name">Drag &amp; Drop</div>
+            <div class="type-desc">Arrastra elementos a las categorías correctas</div>
+          </button>
+          <button class="type-card" data-type="matching">
+            <div class="type-icon">🔗</div>
+            <div class="type-name">Conexión de Términos</div>
+            <div class="type-desc">Une conceptos con sus definiciones o pares</div>
+          </button>
+          <button class="type-card" data-type="memory">
+            <div class="type-icon">🃏</div>
+            <div class="type-name">Memoria</div>
+            <div class="type-desc">Voltea cartas y encuentra los pares ocultos</div>
+          </button>
+          <button class="type-card" data-type="imagelabel">
+            <div class="type-icon">🖼</div>
+            <div class="type-name">Etiquetado de Imagen</div>
+            <div class="type-desc">Arrastra términos a las zonas correctas sobre imágenes reales</div>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CREATOR ── -->
+    <section id="view-creator" class="view">
+      <div class="container">
+        <div class="view-header">
+          <button class="btn btn-back" id="btn-back-creator">← Volver</button>
+          <h1 id="creator-title">Crear Actividad</h1>
+        </div>
+        <div id="creator-content"></div>
+      </div>
+    </section>
+
+    <!-- ── PLAYER ── -->
+    <section id="view-player" class="view">
+      <div class="container">
+        <div class="view-header">
+          <button class="btn btn-back" id="btn-back-player">← Volver</button>
+          <h1 id="player-title">Actividad</h1>
+        </div>
+        <div id="player-content"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ════════════ FOOTER ════════════ -->
+  <footer class="app-footer">
+    💾 Todo se guarda en tu navegador — sin servidor, sin internet, sin cuenta
+  </footer>
+
+</div>
+
+<!-- ── TOASTS ── -->
+<div id="toast-container" aria-live="polite"></div>
+
+<!-- ── MODAL ── -->
+<div id="modal-overlay" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h3 id="modal-title">Confirmar</h3>
+    <div id="modal-message"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modal-cancel">Cancelar</button>
+      <button class="btn btn-danger" id="modal-confirm">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SCRIPTS ════════════ -->
+<!-- Load order matters: storage → engines → creator → app -->
+<script src="js/storage.js"></script>
+<script src="js/activities/quiz.js"></script>
+<script src="js/activities/truefalse.js"></script>
+<script src="js/activities/dragdrop.js"></script>
+<script src="js/activities/matching.js"></script>
+<script src="js/activities/memory.js"></script>
+<script src="js/activities/imagelabel.js"></script>
+<script src="js/exporter.js"></script>
+<script src="js/creator.js"></script>
+<script src="js/community.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

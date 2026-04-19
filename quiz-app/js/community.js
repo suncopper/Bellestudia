@@ -5,7 +5,7 @@
 
 // Firebase está disponible de forma global gracias a los scripts en el index.html
 const firebaseConfig = {
-  apiKey: "AIzaSyAaXgcQa0qvKWanrDdHE-3sSPefoRnupto",
+  apiKey: "poner apikey aqui ",
   authDomain: "bellastudia-efb9c.firebaseapp.com",
   projectId: "bellastudia-efb9c",
   storageBucket: "bellastudia-efb9c.firebasestorage.app",

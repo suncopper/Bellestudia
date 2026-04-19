@@ -78,5 +78,8 @@ const Community = {
 
 };
 
+// Hacer accesible globalmente para los chequeos de window.Community
+window.Community = Community;
+
 // Inicializamos al cargar el archivo
 Community.init();

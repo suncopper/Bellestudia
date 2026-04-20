@@ -55,11 +55,37 @@ function closeInfoModal() {
 }
 
 function scoreMessage(pct) {
-  if (pct === 100) return { emoji: '🏆', msg: '¡Perfecto! ¡Eres increíble!' };
-  if (pct >= 80)   return { emoji: '🎉', msg: '¡Excelente resultado!' };
-  if (pct >= 60)   return { emoji: '👍', msg: '¡Buen trabajo!' };
-  if (pct >= 40)   return { emoji: '📚', msg: 'Sigue practicando' };
-  return             { emoji: '💪', msg: '¡Tú puedes mejorar!' };
+  const select = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  if (pct === 100) {
+    const mapache = '<img src="../raccanim.png" alt="Mapache" style="width: 150px; height: 150px; object-fit: contain; filter: drop-shadow(0 8px 12px rgba(255, 215, 0, 0.4)); animation: float 2s infinite ease-in-out;">';
+    return select([
+      { emoji: mapache, msg: '¡Perfecto! ¡Eres increíble!' },
+      { emoji: mapache, msg: '¡Impecable! Rendimiento legendario.' },
+      { emoji: mapache, msg: '¡Puntuación perfecta! ¡Felicidades!' },
+      { emoji: mapache, msg: '¡Estás on fire! 100% de aciertos.' }
+    ]);
+  }
+  if (pct >= 80) return select([
+    { emoji: '🎉', msg: '¡Excelente resultado!' },
+    { emoji: '👏', msg: '¡Muy bien hecho! Casi perfecto.' },
+    { emoji: '🚀', msg: '¡Gran trabajo! Estás muy cerca de la cima.' },
+    { emoji: '💪', msg: '¡Impresionante nivel!' }
+  ]);
+  if (pct >= 60) return select([
+    { emoji: '👍', msg: '¡Buen trabajo!' },
+    { emoji: '✅', msg: '¡Aprobado! Pero puedes hacerlo mejor.' },
+    { emoji: '🙂', msg: 'Bien hecho, ¡sigue así!' }
+  ]);
+  if (pct >= 40) return select([
+    { emoji: '📚', msg: 'Sigue practicando.' },
+    { emoji: '✏️', msg: 'Has aprendido algo nuevo hoy.' },
+    { emoji: '🧗', msg: 'Un poco más de repaso y lo lograrás.' }
+  ]);
+  return select([
+    { emoji: '💪', msg: '¡Tú puedes mejorar!' },
+    { emoji: '🌱', msg: 'Todo experto fue alguna vez principiante.' },
+    { emoji: '🔁', msg: '¡Inténtalo de nuevo!' }
+  ]);
 }
 
 // ── App ──────────────────────────────────────
@@ -353,9 +379,8 @@ const App = {
     document.getElementById('btn-back-creator')?.addEventListener('click',  () => this.goHome());
     document.getElementById('btn-back-player')?.addEventListener('click',   () => this.goHome());
 
-    // Import / Download App (nav)
+    // Import
     document.getElementById('btn-import')?.addEventListener('click',       () => Exporter.importJSON());
-    document.getElementById('btn-download-app')?.addEventListener('click', () => Exporter.showBundleModal());
 
     // Modal close on backdrop click
     document.getElementById('modal-overlay').addEventListener('click', e => {

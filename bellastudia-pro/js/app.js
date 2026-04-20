@@ -362,10 +362,17 @@ document.addEventListener('DOMContentLoaded', () => {
         list.forEach(i => { if (!i.id) i.id = generateUUID(); });
       }
 
+      let cleanTitle = currentFile.name.replace(/\.pdf$/i, '');
+      cleanTitle = cleanTitle.replace(/^[\d\.\-\s_]+/g, ''); // Quita números y puntos al inicio (ej. 1.4.1_)
+      cleanTitle = cleanTitle.replace(/^IA[:\s\-_]+/i, ''); // Quita un posible 'IA:' si ya lo trae
+      cleanTitle = cleanTitle.replace(/[_\-]/g, ' '); // Cambia _ y - por espacios
+      cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
+      if (cleanTitle) cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+
       const activity = {
         id: generateUUID(),
         type: selectedType,
-        title: `IA: ${currentFile.name.replace('.pdf', '')}`,
+        title: cleanTitle || 'Actividad Generada',
         subject: "Bellestudia Pro",
         topic: `Generado auto. ${finalCount} ítems`,
         data: jsonData,

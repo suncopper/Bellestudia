@@ -160,6 +160,8 @@ const Creator = {
   _newQ() { return { id: App.uid(), text: '', options: ['', '', '', ''], correct: 0 }; },
 
   _quizQCard(q, i) {
+    // Normalize correct to integer — Gemini sometimes returns it as a string (e.g. "2" instead of 2)
+    const correctIdx = parseInt(q.correct ?? 0);
     return `
       <div class="question-card" data-id="${q.id}">
         <div class="question-number">${i + 1}</div>
@@ -174,8 +176,8 @@ const Creator = {
             <label class="form-label">Opciones <small style="text-transform:none;font-weight:400;color:var(--text-muted)">(marca la correcta)</small></label>
             <div class="options-grid">
               ${q.options.map((opt, oi) => `
-                <div class="option-item ${q.correct === oi ? 'correct' : ''}">
-                  <input type="radio" class="option-radio" name="cor-${q.id}" value="${oi}" ${q.correct === oi ? 'checked' : ''}>
+                <div class="option-item ${correctIdx === oi ? 'correct' : ''}">
+                  <input type="radio" class="option-radio" name="cor-${q.id}" value="${oi}" ${correctIdx === oi ? 'checked' : ''}>
                   <input type="text" class="option-input" placeholder="Opción ${oi + 1}" value="${Creator._e(opt)}">
                 </div>`).join('')}
             </div>
@@ -492,6 +494,59 @@ const Creator = {
     });
   },
 
+  _makePinDraggable(pin, imgId, zoneId, wrapper) {
+    let dragging = false;
+    let moved    = false;
+    let startX, startY, origLeft, origTop;
+
+    pin.addEventListener('mousedown', e => {
+      if (e.target.closest('.zone-pin-del')) return; // let delete button work
+      e.preventDefault();
+      e.stopPropagation();
+      dragging = true;
+      moved    = false;
+      startX   = e.clientX;
+      startY   = e.clientY;
+      origLeft = parseFloat(pin.style.left);
+      origTop  = parseFloat(pin.style.top);
+      pin.classList.add('dragging');
+      document.body.style.userSelect = 'none';
+    });
+
+    const onMove = e => {
+      if (!dragging) return;
+      const imgEl = wrapper.querySelector('.img-creator-img');
+      const rect  = imgEl.getBoundingClientRect();
+      const dx = ((e.clientX - startX) / rect.width)  * 100;
+      const dy = ((e.clientY - startY) / rect.height) * 100;
+      const newX = Math.min(Math.max(origLeft + dx, 0), 100);
+      const newY = Math.min(Math.max(origTop  + dy, 0), 100);
+      pin.style.left = newX + '%';
+      pin.style.top  = newY + '%';
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+    };
+
+    const onUp = e => {
+      if (!dragging) return;
+      dragging = false;
+      pin.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      if (moved) {
+        const newX = parseFloat(pin.style.left);
+        const newY = parseFloat(pin.style.top);
+        const imgObj = Creator._imgData.find(i => i.id === imgId);
+        const zone   = imgObj?.zones.find(z => z.id === zoneId);
+        if (zone) { zone.x = newX; zone.y = newY; }
+        // Block the wrapper click so no new pin spawns
+        e.stopPropagation();
+        wrapper.addEventListener('click', ev => ev.stopPropagation(), { once: true, capture: true });
+      }
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  },
+
   _renderZoneMarkers(imgId, wrapper) {
     wrapper.querySelectorAll('.creator-zone-pin').forEach(el => el.remove());
     const imgObj = Creator._imgData.find(i => i.id === imgId);
@@ -499,11 +554,13 @@ const Creator = {
 
     imgObj.zones.forEach(z => {
       const pin = document.createElement('div');
-      pin.className = 'creator-zone-pin';
+      pin.className = 'creator-zone-pin draggable-pin';
       pin.dataset.zoneId = z.id;
       pin.style.left = z.x + '%';
       pin.style.top  = z.y + '%';
+      pin.title = '↕ Arrastra para mover';
       pin.innerHTML  = `
+        <span class="zone-pin-drag-handle">⠿</span>
         <span class="zone-pin-label">${Creator._e(z.label)}</span>
         <button class="zone-pin-del" title="Eliminar zona">✕</button>`;
       pin.querySelector('.zone-pin-del').addEventListener('click', ev => {
@@ -511,6 +568,7 @@ const Creator = {
         this._removeZone(imgId, z.id);
       });
       wrapper.appendChild(pin);
+      this._makePinDraggable(pin, imgId, z.id, wrapper);
     });
   },
 

@@ -224,6 +224,129 @@
       box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
     }
 
+    /* ── Sección de Recursos ── */
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-bottom: 0.6rem;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 800;
+      color: var(--text-light);
+      margin-bottom: 0.6rem;
+      letter-spacing: -1px;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin: 0 auto 2.5rem auto;
+      max-width: 560px;
+      text-align: center;
+    }
+
+    .resources-section {
+      width: 100%;
+      max-width: 1100px;
+      margin-top: 5rem;
+      text-align: center;
+    }
+
+    .resources-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+      gap: 1.25rem;
+      width: 100%;
+    }
+
+    .resource-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px;
+      padding: 1.5rem 1.5rem 1.25rem;
+      text-decoration: none;
+      color: var(--text-light);
+      text-align: left;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .resource-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,210,255,0.07), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .resource-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0, 210, 255, 0.35);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.35), 0 0 30px rgba(0,210,255,0.12);
+    }
+
+    .resource-card:hover::before { opacity: 1; }
+
+    .resource-favicon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      object-fit: contain;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--glass-border);
+      padding: 5px;
+      flex-shrink: 0;
+    }
+
+    .resource-name {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-light);
+      line-height: 1.2;
+    }
+
+    .resource-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      flex: 1;
+    }
+
+    .resource-visit {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-top: 0.25rem;
+      transition: gap 0.2s ease;
+    }
+
+    .resource-card:hover .resource-visit { gap: 0.55rem; }
+
+    .divider {
+      width: 100%;
+      max-width: 1100px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--glass-border), transparent);
+      margin-top: 5rem;
+    }
+
     footer {
       text-align: center;
       padding: 2rem;
@@ -268,7 +391,16 @@
         justify-content: center;
       }
       .bg-blobs {
-        display: none; /* Mejorar el rendimiento y limpiar el fondo en móviles pequeños */
+        display: none;
+      }
+      .resources-section {
+        margin-top: 3.5rem;
+      }
+      .resources-grid {
+        gap: 1rem;
+      }
+      .resource-card {
+        padding: 1.25rem;
       }
     }
 
@@ -285,7 +417,7 @@
   <div class="container">
     <div class="hero-tag">Todo en uno</div>
     <h1>Ecosistema Bellestudia</h1>
-    <p class="subtitle"> Crea actividades con Inteligencia Artificial, descárgalas, juega y compártelas con otros estudiantes.</p>
+    <p class="subtitle">Crea actividades con Inteligencia Artificial, descárgalas, juégalas y compártelas con tus estudiantes.</p>
 
     <div class="cards-wrapper">
       
@@ -306,16 +438,59 @@
         <h2 class="card-title">Bellestudia Pro</h2>
         <p class="card-desc">El generador mágico impulsado por Gemini AI. Sube tus PDFs y deja que la IA extraiga imágenes y cree la actividad automáticamente.</p>
         <span class="card-btn btn-primary">
-          Usar Creador IA
+          Usar Creador AI
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
         </span>
       </a>
 
     </div>
+
+    <!-- ── Recursos Recomendados ── -->
+    <div class="resources-section">
+      <p class="section-label">🔖 Recursos recomendados</p>
+      <h2 class="section-title">Herramientas para estudiantes</h2>
+      <p class="section-desc">Una selección de aplicaciones web gratuitas que complementan tu aprendizaje. ¡Ábrelas directamente desde aquí!</p>
+
+      <div class="resources-grid" id="resources-grid">
+
+        <!-- ilovepdf -->
+        <a href="https://www.ilovepdf.com/es" target="_blank" rel="noopener noreferrer" class="resource-card" id="res-ilovepdf">
+          <img class="resource-favicon" src="https://www.ilovepdf.com/favicon.ico" alt="iLovePDF logo" onerror="this.style.display='none'">
+          <div class="resource-name">iLovePDF</div>
+          <p class="resource-desc">Edita, combina, convierte y comprime PDFs sin instalar nada. El cuchillo suizo del trabajo con documentos.</p>
+          <span class="resource-visit">Visitar sitio <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+
+        <!-- Canva -->
+        <a href="https://www.canva.com/" target="_blank" rel="noopener noreferrer" class="resource-card" id="res-canva">
+          <img class="resource-favicon" src="https://www.canva.com/favicon.ico" alt="Canva logo" onerror="this.style.display='none'">
+          <div class="resource-name">Canva</div>
+          <p class="resource-desc">Diseña presentaciones, infografías, carteles y más con plantillas profesionales arrastrando y soltando.</p>
+          <span class="resource-visit">Visitar sitio <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+
+        <!-- Mentimeter -->
+        <a href="https://www.mentimeter.com/es-ES" target="_blank" rel="noopener noreferrer" class="resource-card" id="res-mentimeter">
+          <img class="resource-favicon" src="https://www.mentimeter.com/favicon.ico" alt="Mentimeter logo" onerror="this.style.display='none'">
+          <div class="resource-name">Mentimeter</div>
+          <p class="resource-desc">Crea encuestas y cuestionarios interactivos en tiempo real para hacer tus clases más participativas.</p>
+          <span class="resource-visit">Visitar sitio <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+
+        <!-- NotebookLM -->
+        <a href="https://notebooklm.google/students?hl=es" target="_blank" rel="noopener noreferrer" class="resource-card" id="res-notebooklm">
+          <img class="resource-favicon" src="https://notebooklm.google/favicon.ico" alt="NotebookLM logo" onerror="this.style.display='none'">
+          <div class="resource-name">NotebookLM</div>
+          <p class="resource-desc">El asistente de estudio de Google basado en IA. Sube tus apuntes y genera resúmenes, preguntas y podcasts de audio.</p>
+          <span class="resource-visit">Visitar sitio <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+
+      </div>
+    </div>
   </div>
 
   <footer>
-    Bellestudia &copy; 2026 — Proyecto diseñado con ❤️ para estudiantes y profesores.
+    Bellestudia &copy; 2026 — Diseñado con ❤️ para estudiantes y profesores.
   </footer>
 
 </body>

@@ -356,6 +356,36 @@
   display: flex; flex-direction: column; gap: var(--sp-lg);
 }
 
+@media (min-width: 900px) {
+  /* On desktop, put word bank on the right */
+  .img-label-player {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    grid-template-areas:
+      "nav nav"
+      "progress progress"
+      "image bank"
+      "actions actions";
+    align-items: start;
+    /* Expand container beyond 700px default if there's room */
+    width: 100vw;
+    max-width: 1000px;
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+  .img-nav-bar { grid-area: nav; }
+  .progress-container { grid-area: progress; }
+  .img-label-wrapper { grid-area: image; }
+  .word-bank-panel {
+    grid-area: bank;
+    position: sticky;
+    top: var(--sp-xl);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+  }
+  .img-label-actions { grid-area: actions; }
+}
+
 /* Nav bar for multiple images */
 .img-nav-bar {
   display: flex; align-items: center;
@@ -377,6 +407,13 @@
   box-shadow: var(--sh-md);
   background: var(--bg-card);
   border: 1px solid var(--border);
+}
+
+/* SVG Layer for arrows and circles in player */
+.player-svg-layer {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 5;
 }
 .img-label-img {
   width: 100%; height: auto; display: block;

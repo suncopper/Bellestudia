@@ -75,15 +75,43 @@ const ImageLabelActivity = {
           <img src="${img.src}" class="img-label-img" id="img-label-img"
             alt="Imagen de actividad" draggable="false">
 
+          <svg class="player-svg-layer">
+            ${img.zones.map(z => {
+              const isExt = (z.type === 'arrow' || z.type === 'circle');
+              if (!isExt) return '';
+              const lx = z.labelX ?? z.x;
+              const ly = z.labelY ?? z.y;
+              if (z.type === 'arrow') {
+                return `<line x1="${lx}%" y1="${ly}%" x2="${z.x}%" y2="${z.y}%" stroke="var(--primary-light)" stroke-width="2" />`;
+              } else if (z.type === 'circle') {
+                return `<line x1="${lx}%" y1="${ly}%" x2="${z.x}%" y2="${z.y}%" stroke="var(--primary-light)" stroke-width="2" stroke-dasharray="4,4" />`;
+              }
+              return '';
+            }).join('')}
+          </svg>
+
+          ${img.zones.map(z => {
+            if (z.type === 'circle') {
+              const sz = z.size || 10;
+              return `<div style="position:absolute; left:${z.x}%; top:${z.y}%; width:${sz*2}%; aspect-ratio: 1; transform:translate(-50%,-50%); border: 2px solid var(--primary); border-radius:50%; background:rgba(124,58,237,0.2); pointer-events:none; z-index:4;"></div>`;
+            }
+            return '';
+          }).join('')}
+
           ${img.zones.map(z => {
             const entry = this._bank.find(e => this._answers[z.id] === e.id);
             const placedLabel = entry?.label;
             const cls = this._submitted
               ? (placedLabel === z.label ? 'correct' : 'incorrect')
               : (placedLabel ? 'filled' : (this._sel ? 'drop-target' : ''));
+            
+            const isExt = (z.type === 'arrow' || z.type === 'circle');
+            const lx = isExt ? (z.labelX ?? z.x) : z.x;
+            const ly = isExt ? (z.labelY ?? z.y) : z.y;
+
             return `
               <div class="img-label-zone ${cls}" data-zone-id="${z.id}"
-                style="left:${z.x}%;top:${z.y}%">
+                style="left:${lx}%;top:${ly}%">
                 ${placedLabel
                   ? `<span class="zone-word-text">${App.esc(placedLabel)}</span>
                      ${this._submitted && placedLabel !== z.label
@@ -250,6 +278,7 @@ const ImageLabelActivity = {
           this._answers[zid] = entryId;
           this._sel = null;
           dropped = true;
+          App.playSound('pop');
         }
       }
     });
@@ -269,6 +298,10 @@ const ImageLabelActivity = {
       const e = this._bank.find(b => b.id === this._answers[z.id]);
       return e?.label === z.label;
     }).length;
+    
+    if (correct === allZones.length) App.playSound('win');
+    else App.playSound('pop');
+    
     this.render();
     setTimeout(() => this._renderScore(correct, allZones.length), 1500);
   },

@@ -71,6 +71,7 @@ const QuizActivity = {
 
     const q = this.activity.data.questions[this.currentIndex];
     const correct = idx === q.correct;
+    App.playSound(correct ? 'correct' : 'incorrect');
     if (correct) this.score++;
 
     document.querySelectorAll('.quiz-option-btn').forEach((btn, i) => {

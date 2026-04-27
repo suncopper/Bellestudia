@@ -117,6 +117,7 @@ const MatchingActivity = {
     if (this.selectedLeft && this.selectedRight) {
       const correct = this.selectedLeft === this.selectedRight; // same pair id
       if (correct) {
+        App.playSound('correct');
         this.matchedPairs.push({ leftId: this.selectedLeft, rightId: this.selectedRight });
         this.score++;
         this.selectedLeft = null;
@@ -124,9 +125,10 @@ const MatchingActivity = {
         this.render();
 
         if (this.score === this.activity.data.pairs.length) {
-          setTimeout(() => this._renderFinal(), 700);
+          setTimeout(() => { App.playSound('win'); this._renderFinal(); }, 700);
         }
       } else {
+        App.playSound('incorrect');
         // Show incorrect briefly
         this.showIncorrect = true;
         this.render();

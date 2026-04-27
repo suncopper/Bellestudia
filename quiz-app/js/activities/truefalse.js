@@ -69,6 +69,7 @@ const TrueFalseActivity = {
 
     const s = this.activity.data.statements[this.currentIndex];
     const correct = value === s.correct;
+    App.playSound(correct ? 'correct' : 'incorrect');
     if (correct) this.score++;
 
     const btnV = document.getElementById('btn-v');

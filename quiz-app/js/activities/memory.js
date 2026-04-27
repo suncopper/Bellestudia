@@ -108,6 +108,7 @@ const MemoryActivity = {
     if (this.matched.has(cardId)) return;
 
     this.flipped.push(cardId);
+    App.playSound('flip');
 
     // Animate flip in DOM without full re-render
     const el = document.querySelector(`[data-card-id="${cardId}"]`);
@@ -124,6 +125,7 @@ const MemoryActivity = {
 
       if (c1.pairId === c2.pairId) {
         // ✅ Match
+        App.playSound('correct');
         setTimeout(() => {
           this.matched.add(id1);
           this.matched.add(id2);
@@ -137,11 +139,12 @@ const MemoryActivity = {
           this._updateStats();
 
           if (this.matched.size === this.cards.length) {
-            setTimeout(() => this._renderComplete(), 700);
+            setTimeout(() => { App.playSound('win'); this._renderComplete(); }, 700);
           }
         }, 600);
       } else {
         // ❌ No match — flip back
+        App.playSound('incorrect');
         setTimeout(() => {
           [id1, id2].forEach(id => {
             const card = document.querySelector(`[data-card-id="${id}"]`);

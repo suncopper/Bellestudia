@@ -144,8 +144,12 @@ const DragDropActivity = {
 
     if (target) {
       const zone = target.dataset.zone;
-      if (zone === '__pool__') delete this.userAnswers[itemId];
-      else this.userAnswers[itemId] = zone;
+      if (zone === '__pool__') {
+        delete this.userAnswers[itemId];
+      } else {
+        this.userAnswers[itemId] = zone;
+        App.playSound('pop');
+      }
       this.render();
     }
   },
@@ -167,6 +171,8 @@ const DragDropActivity = {
     this.submitted = true;
     let score = 0;
     items.forEach(it => { if (this.userAnswers[it.id] === it.category) score++; });
+    if (score === items.length) App.playSound('win');
+    else App.playSound('pop');
     this._renderResult(score, items.length);
   },
 

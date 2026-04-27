@@ -494,7 +494,7 @@ const Creator = {
     });
   },
 
-  _makePinDraggable(pin, imgId, zoneId, wrapper) {
+  _makePinDraggable(pin, imgId, zoneId, wrapper, propX = 'x', propY = 'y') {
     let dragging = false;
     let moved    = false;
     let startX, startY, origLeft, origTop;
@@ -507,8 +507,16 @@ const Creator = {
       moved    = false;
       startX   = e.clientX;
       startY   = e.clientY;
-      origLeft = parseFloat(pin.style.left);
-      origTop  = parseFloat(pin.style.top);
+      
+      if (propX === 'size') {
+        const imgObj = Creator._imgData.find(i => i.id === imgId);
+        const zone   = imgObj?.zones.find(z => z.id === zoneId);
+        origLeft = zone ? zone.size : 10;
+      } else {
+        origLeft = parseFloat(pin.style.left);
+        origTop  = parseFloat(pin.style.top);
+      }
+      
       pin.classList.add('dragging');
       document.body.style.userSelect = 'none';
     });
@@ -519,10 +527,25 @@ const Creator = {
       const rect  = imgEl.getBoundingClientRect();
       const dx = ((e.clientX - startX) / rect.width)  * 100;
       const dy = ((e.clientY - startY) / rect.height) * 100;
-      const newX = Math.min(Math.max(origLeft + dx, 0), 100);
-      const newY = Math.min(Math.max(origTop  + dy, 0), 100);
-      pin.style.left = newX + '%';
-      pin.style.top  = newY + '%';
+      
+      const imgObj = Creator._imgData.find(i => i.id === imgId);
+      const zone   = imgObj?.zones.find(z => z.id === zoneId);
+      if (!zone) return;
+
+      if (propX === 'size') {
+        const newSize = Math.min(Math.max(origLeft + dx, 2), 50);
+        zone.size = newSize;
+        pin.style.left = (zone.x + newSize) + '%';
+      } else {
+        const newX = Math.min(Math.max(origLeft + dx, 0), 100);
+        const newY = Math.min(Math.max(origTop  + dy, 0), 100);
+        pin.style.left = newX + '%';
+        pin.style.top  = newY + '%';
+        zone[propX] = newX;
+        zone[propY] = newY;
+      }
+      
+      this._updateSVGLayer(imgId, wrapper);
       if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
     };
 
@@ -532,11 +555,6 @@ const Creator = {
       pin.classList.remove('dragging');
       document.body.style.userSelect = '';
       if (moved) {
-        const newX = parseFloat(pin.style.left);
-        const newY = parseFloat(pin.style.top);
-        const imgObj = Creator._imgData.find(i => i.id === imgId);
-        const zone   = imgObj?.zones.find(z => z.id === zoneId);
-        if (zone) { zone.x = newX; zone.y = newY; }
         // Block the wrapper click so no new pin spawns
         e.stopPropagation();
         wrapper.addEventListener('click', ev => ev.stopPropagation(), { once: true, capture: true });
@@ -547,17 +565,53 @@ const Creator = {
     document.addEventListener('mouseup',   onUp);
   },
 
+  _updateSVGLayer(imgId, wrapper) {
+    let svg = wrapper.querySelector('svg.creator-svg-layer');
+    if (!svg) {
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'creator-svg-layer');
+      wrapper.appendChild(svg);
+    }
+    const imgObj = Creator._imgData.find(i => i.id === imgId);
+    if (!imgObj) return;
+
+    let html = '';
+    imgObj.zones.forEach(z => {
+      const lx = z.labelX ?? z.x;
+      const ly = z.labelY ?? z.y;
+      
+      if (z.type === 'arrow') {
+        html += `<line x1="${lx}%" y1="${ly}%" x2="${z.x}%" y2="${z.y}%" stroke="var(--primary-light)" stroke-width="2" />`;
+      } else if (z.type === 'circle') {
+        const sz = z.size || 10;
+        // SVG circle with % works based on diagonal of viewBox if we don't have one, but we can just use ellipse to be safe.
+        // Actually, CSS width/height on an absolute div is easier for a perfect circle that scales with width.
+        // Let's use ellipse so it stays exactly with the image's coordinate space.
+        html += `<ellipse cx="${z.x}%" cy="${z.y}%" rx="${sz}%" ry="${sz * wrapper.clientWidth / wrapper.clientHeight}%" fill="rgba(124,58,237,0.2)" stroke="var(--primary)" stroke-width="2" />`;
+        html += `<line x1="${lx}%" y1="${ly}%" x2="${z.x}%" y2="${z.y}%" stroke="var(--primary-light)" stroke-width="2" stroke-dasharray="4,4" />`;
+      }
+    });
+    svg.innerHTML = html;
+  },
+
   _renderZoneMarkers(imgId, wrapper) {
-    wrapper.querySelectorAll('.creator-zone-pin').forEach(el => el.remove());
+    wrapper.querySelectorAll('.creator-zone-pin, .creator-target-pin, .creator-resize-handle').forEach(el => el.remove());
+    this._updateSVGLayer(imgId, wrapper);
+    
     const imgObj = Creator._imgData.find(i => i.id === imgId);
     if (!imgObj) return;
 
     imgObj.zones.forEach(z => {
+      const isExt = (z.type === 'arrow' || z.type === 'circle');
+      const lx = isExt ? z.labelX : z.x;
+      const ly = isExt ? z.labelY : z.y;
+
+      // The label pin
       const pin = document.createElement('div');
       pin.className = 'creator-zone-pin draggable-pin';
       pin.dataset.zoneId = z.id;
-      pin.style.left = z.x + '%';
-      pin.style.top  = z.y + '%';
+      pin.style.left = lx + '%';
+      pin.style.top  = ly + '%';
       pin.title = '↕ Arrastra para mover';
       pin.innerHTML  = `
         <span class="zone-pin-drag-handle">⠿</span>
@@ -568,7 +622,37 @@ const Creator = {
         this._removeZone(imgId, z.id);
       });
       wrapper.appendChild(pin);
-      this._makePinDraggable(pin, imgId, z.id, wrapper);
+      this._makePinDraggable(pin, imgId, z.id, wrapper, isExt ? 'labelX' : 'x', isExt ? 'labelY' : 'y');
+      
+      // Target pin for arrow
+      if (z.type === 'arrow') {
+        const targetPin = document.createElement('div');
+        targetPin.className = 'creator-target-pin';
+        targetPin.style.left = z.x + '%';
+        targetPin.style.top  = z.y + '%';
+        targetPin.title = '↕ Arrastra objetivo';
+        wrapper.appendChild(targetPin);
+        this._makePinDraggable(targetPin, imgId, z.id, wrapper, 'x', 'y');
+      }
+      
+      // Center and resize handle for circle
+      if (z.type === 'circle') {
+        const centerPin = document.createElement('div');
+        centerPin.className = 'creator-target-pin';
+        centerPin.style.left = z.x + '%';
+        centerPin.style.top  = z.y + '%';
+        centerPin.title = '↕ Arrastra centro';
+        wrapper.appendChild(centerPin);
+        this._makePinDraggable(centerPin, imgId, z.id, wrapper, 'x', 'y');
+        
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'creator-resize-handle';
+        resizeHandle.style.left = (z.x + (z.size || 10)) + '%';
+        resizeHandle.style.top  = z.y + '%';
+        resizeHandle.title = '↔ Arrastra para redimensionar';
+        wrapper.appendChild(resizeHandle);
+        this._makePinDraggable(resizeHandle, imgId, z.id, wrapper, 'size', 'size');
+      }
     });
   },
 
@@ -580,19 +664,26 @@ const Creator = {
     popup.style.left = Math.min(x, 62) + '%';
     popup.style.top  = Math.min(y, 82) + '%';
     popup.innerHTML  = `
+      <select class="zone-type-sel">
+        <option value="pin">📍 Punto</option>
+        <option value="arrow">↗️ Flecha</option>
+        <option value="circle">⭕ Círculo</option>
+      </select>
       <input type="text" class="zone-label-inp" placeholder="Nombre de la estructura…">
       <button class="zone-inp-ok" title="Confirmar">✓</button>
       <button class="zone-inp-x"  title="Cancelar">✕</button>`;
 
     wrapper.appendChild(popup);
     const inp = popup.querySelector('.zone-label-inp');
+    const typeSel = popup.querySelector('.zone-type-sel');
     inp.focus();
 
     const confirm = () => {
       const label = inp.value.trim();
+      const type = typeSel.value;
       popup.remove();
       if (!label) return;
-      this._addZone(imgId, x, y, label, wrapper);
+      this._addZone(imgId, x, y, label, type, wrapper);
     };
 
     popup.querySelector('.zone-inp-ok').addEventListener('click', confirm);
@@ -602,13 +693,24 @@ const Creator = {
       if (e.key === 'Escape') popup.remove();
     });
     inp.addEventListener('click', e => e.stopPropagation());
+    typeSel.addEventListener('click', e => e.stopPropagation());
     popup.addEventListener('click', e => e.stopPropagation());
   },
 
-  _addZone(imgId, x, y, label, wrapper) {
+  _addZone(imgId, x, y, label, type, wrapper) {
     const imgObj = Creator._imgData.find(i => i.id === imgId);
     if (!imgObj) return;
-    imgObj.zones.push({ id: App.uid(), x, y, label });
+    const zone = { id: App.uid(), x, y, label, type: type || 'pin' };
+    
+    if (type === 'arrow' || type === 'circle') {
+      zone.labelX = Math.min(Math.max(0, x - 15), 100);
+      zone.labelY = Math.min(Math.max(0, y - 15), 100);
+    }
+    if (type === 'circle') {
+      zone.size = 10;
+    }
+    
+    imgObj.zones.push(zone);
     this._renderZoneMarkers(imgId, wrapper);
     this._updateWordBankPreview();
   },

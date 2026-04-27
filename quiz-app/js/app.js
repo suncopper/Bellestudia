@@ -97,6 +97,75 @@ const App = {
   _VIEWS: ['dashboard', 'type-selector', 'creator', 'player', 'community'],
 
   uid()  { return generateId(); },
+
+  // ── Audio Feedback ───────────────────────────
+  _audioCtx: null,
+  playSound(type) {
+    if (!this._audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      this._audioCtx = new AudioContext();
+    }
+    const ctx = this._audioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'correct') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, t); // C5
+      osc.frequency.exponentialRampToValueAtTime(1046.50, t + 0.1); // C6
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    } else if (type === 'incorrect') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(100, t + 0.2);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    } else if (type === 'win') {
+      osc.type = 'triangle';
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+      osc.frequency.setValueAtTime(523.25, t); // C5
+      osc.frequency.setValueAtTime(659.25, t + 0.1); // E5
+      osc.frequency.setValueAtTime(783.99, t + 0.2); // G5
+      osc.frequency.setValueAtTime(1046.50, t + 0.3); // C6
+      osc.start(t);
+      osc.stop(t + 0.5);
+    } else if (type === 'pop') {
+      // Just a small pop for placing an item
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, t);
+      osc.frequency.exponentialRampToValueAtTime(600, t + 0.05);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+      osc.start(t);
+      osc.stop(t + 0.1);
+    } else if (type === 'flip') {
+      // Short swoosh for card flip
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(300, t);
+      osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+      osc.start(t);
+      osc.stop(t + 0.1);
+    }
+  },
   esc(s) {
     if (!s && s !== 0) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

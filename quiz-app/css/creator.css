@@ -281,12 +281,13 @@
   cursor: crosshair;
   border-radius: var(--r-sm);
   border: 1.5px solid var(--border);
-  overflow: hidden;
+  overflow: visible;
 }
 .img-creator-img {
   width: 100%; height: auto; display: block;
   pointer-events: none;
   user-select: none;
+  border-radius: var(--r-sm);
 }
 .img-click-hint {
   font-size: .77rem; color: var(--text-muted);
@@ -296,7 +297,7 @@
 /* Zone pin anchored on image */
 .creator-zone-pin {
   position: absolute;
-  transform: translate(-50%, -100%);   /* anchor bottom-center on the click point */
+  transform: translate(-50%, -50%);   /* center-anchor so SVG lines connect cleanly */
   z-index: 20;
   background: var(--primary);
   color: #fff;
@@ -309,7 +310,6 @@
   box-shadow: 0 2px 10px rgba(0,0,0,.55);
   pointer-events: all;
   cursor: default;
-  margin-top: -4px;   /* slight offset so pin tail lands on click */
 }
 .zone-pin-label  { pointer-events: none; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
 .zone-pin-del {

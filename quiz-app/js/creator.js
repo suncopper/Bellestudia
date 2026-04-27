@@ -703,8 +703,9 @@ const Creator = {
     const zone = { id: App.uid(), x, y, label, type: type || 'pin' };
     
     if (type === 'arrow' || type === 'circle') {
-      zone.labelX = Math.min(Math.max(0, x - 15), 100);
-      zone.labelY = Math.min(Math.max(0, y - 15), 100);
+      // Place label on the side with more space so it stays visible
+      zone.labelX = x > 60 ? Math.max(0, x - 18) : Math.min(100, x + 18);
+      zone.labelY = y > 60 ? Math.max(0, y - 18) : Math.min(100, y + 18);
     }
     if (type === 'circle') {
       zone.size = 10;

@@ -123,15 +123,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const extracted = [];
     const MAX_IMAGES = 15; // Reducido de 25 para evitar payloads gigantes
     try {
-      const pdf = await window.pdfjsLib.getDocument({data: arrayBuffer}).promise;
+      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        if(extracted.length >= MAX_IMAGES) break; 
+        if (extracted.length >= MAX_IMAGES) break;
         const page = await pdf.getPage(pageNum);
         const ops = await page.getOperatorList();
         const pageObjs = page.objs;
-        
+
         for (let i = 0; i < ops.fnArray.length; i++) {
-          if(extracted.length >= MAX_IMAGES) break;
+          if (extracted.length >= MAX_IMAGES) break;
           const fn = ops.fnArray[i];
           const args = ops.argsArray[i];
           let imgData = null;
@@ -141,8 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
               imgData = await pageObjs.get(objId);
               if (!imgData) imgData = await page.commonObjs.get(objId);
-            } catch(e) {}
-          } 
+            } catch (e) { }
+          }
           else if (fn === window.pdfjsLib.OPS.paintInlineImageXObject) {
             imgData = args[0];
           }
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
               canvas.width = destW;
               canvas.height = destH;
               const ctx = canvas.getContext('2d');
-              
+
               if (imgData.bitmap) {
                 ctx.drawImage(imgData.bitmap, 0, 0, destW, destH);
               } else {
@@ -175,9 +175,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (imgData.data.length === imgData.width * imgData.height * 3) {
                   for (let j = 0, k = 0; j < imgData.data.length; j += 3, k += 4) {
                     rgbaData[k] = imgData.data[j];
-                    rgbaData[k+1] = imgData.data[j+1];
-                    rgbaData[k+2] = imgData.data[j+2];
-                    rgbaData[k+3] = 255;
+                    rgbaData[k + 1] = imgData.data[j + 1];
+                    rgbaData[k + 2] = imgData.data[j + 2];
+                    rgbaData[k + 3] = 255;
                   }
                 } else {
                   rgbaData.set(imgData.data);
@@ -192,11 +192,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const url = canvas.toDataURL('image/jpeg', 0.5);
                 if (!extracted.includes(url)) extracted.push(url);
               }
-            } catch(e) {}
+            } catch (e) { }
           }
         }
       }
-    } catch(err) {
+    } catch (err) {
       console.warn("Fallo extraer imágenes", err);
     }
     return extracted;
@@ -222,14 +222,14 @@ document.addEventListener('DOMContentLoaded', () => {
   async function fetchWithRetry(url, options = {}, retries = 3, backoff = 1000) {
     try {
       const resp = await fetch(url, options);
-      
+
       // Si el error es 503 (Servicio sobrecargado) o 429 (Límite), reintentamos
       if ((resp.status === 503 || resp.status === 429) && retries > 0) {
-        updateProgress(null, `Servidor ocupado (503). Reintentando en ${backoff/1000}s...`);
+        updateProgress(null, `Servidor ocupado (503). Reintentando en ${backoff / 1000}s...`);
         await new Promise(r => setTimeout(r, backoff));
         return fetchWithRetry(url, options, retries - 1, backoff * 2);
       }
-      
+
       return resp;
     } catch (err) {
       if (retries > 0) {
@@ -248,10 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!currentFile) return showToast('Sube un archivo PDF primero.', 'error');
 
     const selectedType = document.querySelector('input[name="act-type"]:checked')?.value || 'quiz';
-    const rawCount     = document.getElementById('q-count')?.value || '10';
-    const finalCount   = parseInt(rawCount) || 10;
+    const rawCount = document.getElementById('q-count')?.value || '10';
+    const finalCount = parseInt(rawCount) || 10;
     const selectedLang = document.getElementById('q-lang')?.value || 'Español';
-    const useImages    = document.getElementById('include-images')?.checked ?? true;
+    const useImages = document.getElementById('include-images')?.checked ?? true;
 
     console.log('--- Iniciando Generación Bellestudia Pro ---');
     console.log('Tipo:', selectedType, 'Items:', finalCount, 'Img:', useImages);
@@ -262,23 +262,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const base64Data = await fileToBase64(currentFile);
-      
+
       let extractedImages = [];
       let pageCaptures = [];
 
       if (useImages) {
         updateProgress(30, 'Analizando contenido visual del PDF...');
         extractedImages = await extractImagesFromPDF(currentFile);
-        
+
         try {
-          const pdf = await window.pdfjsLib.getDocument({data: await currentFile.arrayBuffer()}).promise;
+          const pdf = await window.pdfjsLib.getDocument({ data: await currentFile.arrayBuffer() }).promise;
           const pagesToCapture = Math.min(pdf.numPages, 10);
           for (let i = 1; i <= pagesToCapture; i++) {
             const page = await pdf.getPage(i);
             const cap = await renderPageToImage(page);
             pageCaptures.push(cap);
           }
-        } catch(e) { console.error("Fallo renderizado de backup", e); }
+        } catch (e) { console.error("Fallo renderizado de backup", e); }
 
         if (extractedImages.length > 0) {
           showToast(`He encontrado ${extractedImages.length} imágenes.`, 'success');
@@ -544,7 +544,7 @@ ${schemaDesc}
     btnDownloadPortable.addEventListener('click', async () => {
       try {
         showToast('Preparando descarga portable...', 'info');
-        
+
         // 1. Obtener contenidos de archivos locales
         const [cssResp, jsResp, logoResp] = await Promise.all([
           fetch('css/style.css'),
@@ -555,7 +555,7 @@ ${schemaDesc}
         const cssText = await cssResp.text();
         const jsText = await jsResp.text();
         const logoBlob = await logoResp.blob();
-        
+
         const logoBase64 = await new Promise(resolve => {
           const r = new FileReader();
           r.onload = () => resolve(r.result);
@@ -565,7 +565,7 @@ ${schemaDesc}
         // 2. Construir el nuevo HTML
         // Clonamos el documento actual
         const htmlDoc = document.documentElement.cloneNode(true);
-        
+
         // Limpiamos referencias externas que vamos a inyectar
         htmlDoc.querySelectorAll('link[rel="stylesheet"]').forEach(l => {
           if (l.getAttribute('href')?.includes('css/')) l.remove();
@@ -573,12 +573,12 @@ ${schemaDesc}
         htmlDoc.querySelectorAll('script').forEach(s => {
           if (s.getAttribute('src')?.includes('js/')) s.remove();
         });
-        
+
         // Inyectamos CSS
         const styleTag = document.createElement('style');
         styleTag.textContent = cssText;
         htmlDoc.querySelector('head').appendChild(styleTag);
-        
+
         // Actualizamos imágenes a Base64
         htmlDoc.querySelectorAll('img').forEach(img => {
           if (img.getAttribute('src')?.includes('logo.png')) {
@@ -589,7 +589,7 @@ ${schemaDesc}
         // Eliminamos el botón de descarga del bundle para evitar confusión
         const footerBtn = htmlDoc.querySelector('#btn-download-portable');
         if (footerBtn) footerBtn.remove();
-        
+
         // Inyectamos JS (debe ser el último paso antes de cerrar el body)
         const scriptTag = document.createElement('script');
         // El script inyectado es el mismo app.js, que ya estará inlined
@@ -597,7 +597,7 @@ ${schemaDesc}
         htmlDoc.querySelector('body').appendChild(scriptTag);
 
         const finalHtml = '<!DOCTYPE html>\n' + htmlDoc.outerHTML;
-        
+
         // 3. Disparar descarga
         const blob = new Blob([finalHtml], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -608,7 +608,7 @@ ${schemaDesc}
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         showToast('¡App portable (un solo archivo) descargada!', 'success');
       } catch (err) {
         console.error('Error bundling app:', err);

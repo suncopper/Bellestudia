@@ -11,14 +11,14 @@
   --bg-card-hover: #1a1a42;
   --bg-elevated:   #1e1e4a;
 
-  --primary:       #7c3aed;
-  --primary-light: #a78bfa;
-  --primary-dark:  #5b21b6;
-  --secondary:     #06b6d4;
-  --secondary-light:#67e8f9;
+  --primary:       #d946ef;
+  --primary-light: #f0abfc;
+  --primary-dark:  #a21caf;
+  --secondary:     #8b5cf6;
+  --secondary-light:#c4b5fd;
 
-  --grad-primary:  linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
-  --grad-card:     linear-gradient(135deg,rgba(124,58,237,.18),rgba(6,182,212,.12));
+  --grad-primary:  linear-gradient(135deg, #d946ef 0%, #8b5cf6 100%);
+  --grad-card:     linear-gradient(135deg,rgba(217,70,239,.18),rgba(139,92,246,.12));
 
   --text-primary:  #e2e8f0;
   --text-secondary:#94a3b8;

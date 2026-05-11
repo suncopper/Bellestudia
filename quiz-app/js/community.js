@@ -44,14 +44,31 @@ const Community = {
         type: activity.type,
         subject: activity.subject || '',
         topic: activity.topic || '',
-        data: activity.data,
         author: author || 'Anónimo',
         publishedAt: firebase.firestore.FieldValue.serverTimestamp(),
         // Para rastrear copias sin colisiones con los ID locales
         originalId: activity.id 
       };
 
-      await db.collection("community_activities").add(publicActivity);
+      // Serializamos la data y la partimos en trozos de ~800KB para evitar el límite de 1MB de Firestore
+      const dataString = JSON.stringify(activity.data || {});
+      const chunkSize = 800000; 
+      const chunks = [];
+      for (let i = 0; i < dataString.length; i += chunkSize) {
+        chunks.push(dataString.substring(i, i + chunkSize));
+      }
+      publicActivity.chunksCount = chunks.length;
+
+      // 1. Guardar documento principal con metadatos
+      const docRef = await db.collection("community_activities").add(publicActivity);
+
+      // 2. Guardar los trozos en una subcolección "chunks"
+      for (let i = 0; i < chunks.length; i++) {
+        await docRef.collection("chunks").doc(i.toString()).set({
+          text: chunks[i]
+        });
+      }
+
       return true;
     } catch (e) {
       console.error("Error al publicar:", e);
@@ -63,7 +80,8 @@ const Community = {
     if (!db) throw new Error("Firebase no está conectado.");
 
     try {
-      // Ordenamos por los más recientes y limitamos para no saturar internet/BD
+      // Ordenamos por los más recientes y limitamos. 
+      // NOTA: Esto ahora solo descarga metadatos ligeros, ahorrando ancho de banda.
       const snapshot = await db.collection("community_activities")
                                .orderBy("publishedAt", "desc")
                                .limit(limit)
@@ -77,6 +95,39 @@ const Community = {
       return activities;
     } catch (e) {
       console.error("Error al obtener comunidad:", e);
+      throw new Error(`Error de descarga: ${e.message}`);
+    }
+  },
+
+  async getActivity(id) {
+    if (!db) throw new Error("Firebase no está conectado.");
+
+    try {
+      const doc = await db.collection("community_activities").doc(id).get();
+      if (!doc.exists) throw new Error("La actividad no existe.");
+      const act = { id: doc.id, ...doc.data() };
+
+      // Si tiene 'data' directo, es una actividad antigua (retrocompatibilidad)
+      if (act.data) return act;
+
+      // Si no, reconstruimos la data uniendo los trozos de la subcolección
+      let fullString = "";
+      for (let i = 0; i < (act.chunksCount || 1); i++) {
+        const chunkDoc = await doc.ref.collection("chunks").doc(i.toString()).get();
+        if (chunkDoc.exists) {
+          fullString += chunkDoc.data().text;
+        }
+      }
+
+      if (fullString) {
+        act.data = JSON.parse(fullString);
+      } else {
+        act.data = {};
+      }
+
+      return act;
+    } catch (e) {
+      console.error("Error al obtener actividad:", e);
       throw new Error(`Error de descarga: ${e.message}`);
     }
   }

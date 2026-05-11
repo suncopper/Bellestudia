@@ -93,6 +93,7 @@ const App = {
   editingActivityId: null,
   filterSubject:     null,
   filterTopic:       null,
+  searchTerm:        '',
 
   _VIEWS: ['dashboard', 'type-selector', 'creator', 'player', 'community'],
 
@@ -179,6 +180,7 @@ const App = {
       matching:   { icon: '🔗', label: 'Conexión de Términos' },
       memory:     { icon: '🃏', label: 'Memoria' },
       imagelabel: { icon: '🖼', label: 'Etiquetado de Imagen' },
+      pointclick: { icon: '🖱️', label: 'Juego Point & Click' },
     };
     return map[type] || { icon: '📝', label: type };
   },
@@ -261,6 +263,10 @@ const App = {
     let filtered = [...all].reverse();
     if (this.filterSubject) filtered = filtered.filter(a => a.subject === this.filterSubject);
     if (this.filterTopic)   filtered = filtered.filter(a => a.topic   === this.filterTopic);
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(a => a.title.toLowerCase().includes(term));
+    }
 
     if (!filtered.length) {
       grid.innerHTML = '';
@@ -334,6 +340,7 @@ const App = {
       matching:   MatchingActivity,
       memory:     MemoryActivity,
       imagelabel: ImageLabelActivity,
+      pointclick: PointClickActivity,
     };
     const engine = engines[act.type];
     if (engine) engine.start(act);
@@ -388,8 +395,8 @@ const App = {
 
   async importFromCommunity(id) {
     try {
-      const activities = await Community.getRecentActivities(30);
-      const act = activities.find(a => a.id === id);
+      showToast('Descargando actividad... ⏳', 'info');
+      const act = await Community.getActivity(id);
       if (!act) return showToast('No se encontró la actividad', 'error');
 
       // Modificamos el ID para evitar conflictos, pero guardamos el original
@@ -407,7 +414,7 @@ const App = {
       showToast('¡Actividad importada a tu cuenta!', 'success');
       this.goHome(); // Devuelve al dashboard
     } catch (e) {
-      showToast('Error al importar', 'error');
+      showToast('Error al importar: ' + e.message, 'error');
     }
   },
 
@@ -433,6 +440,12 @@ const App = {
     // New activity
     ['btn-new-activity', 'btn-new-activity-empty'].forEach(id => {
       document.getElementById(id)?.addEventListener('click', () => this.showView('type-selector'));
+    });
+
+    // Search bar listener
+    document.getElementById('dashboard-search')?.addEventListener('input', e => {
+      this.searchTerm = e.target.value;
+      this.renderDashboard();
     });
 
     // Activity type cards

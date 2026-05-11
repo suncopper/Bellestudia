@@ -48,6 +48,16 @@
           <p class="hero-subtitle">Crea, edita y juega actividades educativas</p>
         </div>
         <div class="stats-bar" id="stats-bar"></div>
+        
+        <!-- Barra de búsqueda -->
+        <div class="search-section" style="margin-bottom: var(--sp-lg);">
+          <div class="search-input-wrapper" style="position:relative; width:100%; max-width: 600px; margin: 0 auto;">
+            <span style="position:absolute; left:16px; top:50%; transform:translateY(-50%); opacity:0.6; pointer-events:none;">🔍</span>
+            <input type="text" id="dashboard-search" class="form-input" 
+                   placeholder="Buscar actividad por título..." 
+                   style="padding-left: 45px; width:100%; border-radius: 50px; background: var(--bg-surface); border-color: var(--border); box-shadow: var(--sh-sm);">
+          </div>
+        </div>
 
         <!-- Subject / Topic filter (shown when activities have subjects) -->
         <div class="subject-filter-section" id="filter-section" style="display:none"></div>
@@ -66,7 +76,7 @@
     <section id="view-community" class="view">
       <div class="container">
         <div class="dashboard-hero">
-          <h1 class="hero-title">Comunidad Bellestudia 🌍</h1>
+          <h1 class="hero-title">Comunidad Bellestudia <span style="color: initial; -webkit-text-fill-color: initial; background: none;">🌍</span></h1>
           <p class="hero-subtitle">Explora, descarga y juega actividades compartidas por otros profesores y estudiantes.</p>
         </div>
         
@@ -123,6 +133,11 @@
             <div class="type-icon">🖼</div>
             <div class="type-name">Etiquetado de Imagen</div>
             <div class="type-desc">Arrastra términos a las zonas correctas sobre imágenes reales</div>
+          </button>
+          <button class="type-card" data-type="pointclick">
+            <div class="type-icon">🖱️</div>
+            <div class="type-name">Aventura Point &amp; Click</div>
+            <div class="type-desc">Aventura interactiva con escenas y zonas clickeables</div>
           </button>
         </div>
       </div>
@@ -183,9 +198,12 @@
 <script src="js/activities/matching.js"></script>
 <script src="js/activities/memory.js"></script>
 <script src="js/activities/imagelabel.js"></script>
+<script src="js/activities/pointclick.js"></script>
 <script src="js/exporter.js"></script>
 <script src="js/creator.js"></script>
+<script src="js/activities/pointclick_creator.js"></script>
 <script src="js/community.js"></script>
+<script src="js/rain.js"></script>
 <script src="js/app.js"></script>
 
 </body>

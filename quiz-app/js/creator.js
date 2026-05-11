@@ -14,6 +14,7 @@ const Creator = {
     matching:   'Conexión de Términos',
     memory:     'Juego de Memoria',
     imagelabel: 'Etiquetado de Imagen',
+    pointclick: 'Aventura Point & Click',
   },
   
   // ── Image Helpers ────────────────────────────
@@ -96,6 +97,7 @@ const Creator = {
       matching:   () => this._matchForm(activity, allActivities),
       memory:     () => this._memForm(activity, allActivities),
       imagelabel: () => this._imgLabelForm(activity, allActivities),
+      pointclick: () => PointClickCreator.render(activity, allActivities),
     };
     el.innerHTML = (map[type] || (() => '<p>Tipo no soportado</p>'))();
     this._attachEvents(type);
@@ -812,6 +814,7 @@ const Creator = {
     if (type === 'quiz') this._reattachRadios();
 
     if (type === 'imagelabel') this._initImgList();
+    if (type === 'pointclick') PointClickCreator.attachEvents();
   },
 
   // ────────────────────────────────────────────
@@ -842,19 +845,7 @@ const Creator = {
     if (App.editingActivityId) Storage.updateActivity(activity);
     else                       Storage.addActivity(activity);
 
-    // Auto-descarga del archivo JSON
-    const blob = new Blob([JSON.stringify(activity, null, 2)], { type: 'application/json' });
-    const filename = (activity.title || 'actividad').replace(/[^a-z0-9áéíóúüñ\s]/gi,'').replace(/\s+/g,'_').slice(0,40) + '.bellestudia.json';
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showToast(App.editingActivityId ? 'Actividad guardada y descargada ✅' : 'Actividad creada y descargada ✅', 'success');
+    showToast(App.editingActivityId ? 'Actividad guardada ✅' : 'Actividad creada ✅', 'success');
     App.editingActivityId = null;
     App.goHome();
   },
@@ -867,6 +858,7 @@ const Creator = {
     if (t === 'matching')   return this._collectMatch();
     if (t === 'memory')     return this._collectMem();
     if (t === 'imagelabel') return this._collectImgLabel();
+    if (t === 'pointclick') return PointClickCreator.collectData();
     throw new Error('Tipo desconocido');
   },
 

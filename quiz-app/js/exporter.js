@@ -89,23 +89,30 @@ const Exporter = {
       return showToast('Necesitas conexión a internet para compartir links.', 'error');
     }
 
-    showToast('Generando link... ⏳', 'info');
+    const isUpdate = !!act.cloudId;
+    showToast(isUpdate ? 'Actualizando link... ⏳' : 'Generando link... ⏳', 'info');
+
     try {
-      // Publicamos (o republicamos) para obtener un ID de nube
-      const cloudId = await Community.publishActivity(act, "Usuario Bellestudia");
+      // Publicamos usando el cloudId existente si lo tiene
+      const cloudId = await Community.publishActivity(act, "Usuario Bellestudia", act.cloudId);
       
+      // Si es nuevo, lo guardamos en la actividad local
+      if (!isUpdate) {
+        act.cloudId = cloudId;
+        await Storage.updateActivity(act);
+      }
+
       const baseUrl = window.location.href.split('?')[0];
       const shareUrl = baseUrl + "?sharedId=" + cloudId;
 
-      
       showInfoModal(
-        `🔗 Link generado`,
-        `<p style="margin-bottom: var(--sp-md)">Copia este link para compartir la actividad:</p>
+        isUpdate ? `✅ Link actualizado` : `🔗 Link generado`,
+        `<p style="margin-bottom: var(--sp-md)">${isUpdate ? 'La versión online se ha actualizado. El link sigue siendo el mismo:' : 'Copia este link para compartir la actividad:'}</p>
          <div style="display:flex; gap:0.5rem; margin-bottom:var(--sp-lg)">
            <input type="text" id="share-url-input" class="form-input" value="${shareUrl}" readonly style="flex:1; font-size:0.85rem">
            <button class="btn btn-primary" id="btn-copy-url">Copiar</button>
          </div>
-         <p style="font-size:0.8rem; color:var(--text-muted)">Cualquiera con este link podrá jugar directamente a tu actividad.</p>`,
+         <p style="font-size:0.8rem; color:var(--text-muted)">${isUpdate ? 'Cualquier persona que use el link anterior ahora verá tus cambios más recientes.' : 'Cualquiera con este link podrá jugar directamente a tu actividad.'}</p>`,
         () => {
           document.getElementById('btn-copy-url')?.addEventListener('click', () => {
             const inp = document.getElementById('share-url-input');
@@ -116,9 +123,10 @@ const Exporter = {
         }
       );
     } catch (e) {
-      showToast('Error al generar link: ' + e.message, 'error');
+      showToast('Error al compartir: ' + e.message, 'error');
     }
   },
+
 
 
   // ── Import from JSON file ───────────────────────

@@ -35,7 +35,7 @@ const Community = {
     console.log("Firebase Community Init ✅");
   },
 
-  async publishActivity(activity, author) {
+  async publishActivity(activity, author, existingId = null) {
     if (!db) throw new Error("Firebase no está conectado.");
     
     try {
@@ -46,11 +46,9 @@ const Community = {
         topic: activity.topic || '',
         author: author || 'Anónimo',
         publishedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        // Para rastrear copias sin colisiones con los ID locales
         originalId: activity.id 
       };
 
-      // Serializamos la data y la partimos en trozos de ~800KB para evitar el límite de 1MB de Firestore
       const dataString = JSON.stringify(activity.data || {});
       const chunkSize = 800000; 
       const chunks = [];
@@ -59,10 +57,16 @@ const Community = {
       }
       publicActivity.chunksCount = chunks.length;
 
-      // 1. Guardar documento principal con metadatos
-      const docRef = await db.collection("community_activities").add(publicActivity);
+      // 1. Guardar documento principal
+      let docRef;
+      if (existingId) {
+        docRef = db.collection("community_activities").doc(existingId);
+        await docRef.set(publicActivity);
+      } else {
+        docRef = await db.collection("community_activities").add(publicActivity);
+      }
 
-      // 2. Guardar los trozos en una subcolección "chunks"
+      // 2. Guardar los trozos
       for (let i = 0; i < chunks.length; i++) {
         await docRef.collection("chunks").doc(i.toString()).set({
           text: chunks[i]
@@ -70,6 +74,7 @@ const Community = {
       }
 
       return docRef.id;
+
     } catch (e) {
       console.error("Error al publicar:", e);
       throw new Error(`No se pudo publicar: ${e.message}`);

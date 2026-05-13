@@ -70,7 +70,8 @@ const QuizActivity = {
     this.answered = true;
 
     const q = this.activity.data.questions[this.currentIndex];
-    const correct = idx === q.correct;
+    const correct = idx == q.correct;
+
     App.playSound(correct ? 'correct' : 'incorrect');
     if (correct) this.score++;
 

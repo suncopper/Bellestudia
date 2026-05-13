@@ -441,16 +441,43 @@ document.addEventListener('DOMContentLoaded', () => {
       updateProgress(90, 'Construyendo archivo final...');
 
       const processItem = (obj) => {
+        // Manejo de imágenes
         if (obj.image && typeof obj.image === 'string' && obj.image.startsWith('img_')) {
           const idx = parseInt(obj.image.split('_')[1]);
           if (!isNaN(idx) && extractedImages[idx]) obj.image = extractedImages[idx];
           else delete obj.image;
+        }
+
+        // Limpieza de campo 'correct' para Quizzes (evitar strings o letras)
+        if (selectedType === 'quiz' && obj.correct !== undefined) {
+          let c = obj.correct;
+          if (typeof c === 'string') {
+            c = c.toUpperCase().trim();
+            if (c === 'A') c = 0;
+            else if (c === 'B') c = 1;
+            else if (c === 'C') c = 2;
+            else if (c === 'D') c = 3;
+            else c = parseInt(c);
+          }
+          if (isNaN(c) || c < 0 || c > 3) obj.correct = 0;
+          else obj.correct = Number(c);
+        }
+
+        // Limpieza de campo 'correct' para Verdadero/Falso
+        if (selectedType === 'truefalse' && obj.correct !== undefined) {
+          if (typeof obj.correct === 'string') {
+            const val = obj.correct.toLowerCase().trim();
+            obj.correct = (val === 'true' || val === 'v' || val === 'verdadero');
+          } else {
+            obj.correct = !!obj.correct;
+          }
         }
       };
       if (jsonData.questions) jsonData.questions.forEach(processItem);
       if (jsonData.statements) jsonData.statements.forEach(processItem);
       if (jsonData.items) jsonData.items.forEach(processItem);
       if (jsonData.pairs) jsonData.pairs.forEach(processItem);
+
 
       if (['matching', 'memory', 'dragdrop'].includes(selectedType)) {
         const list = jsonData.pairs || jsonData.items || [];
@@ -504,7 +531,8 @@ Un objeto JSON con la propiedad "questions" que es un array de objetos.
 Cada objeto tiene:
 - "text": (string) el texto de la pregunta.
 - "options": (array de EXACTAMENTE 4 strings) las opciones de respuesta.
-- "correct": (número entero de 0 a 3) el índice de la respuesta correcta.
+- "correct": (número entero de 0 a 3) el índice de la respuesta correcta. 
+  IMPORTANTE: Distribuye las respuestas correctas de forma aleatoria (A, B, C o D). NO pongas siempre la respuesta correcta en la primera opción.
 - "image": (opcional, string como "img_0") ID de la imagen relacionada.`;
         break;
       case "truefalse":

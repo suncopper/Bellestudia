@@ -332,21 +332,9 @@ const App = {
 
   async playActivity(id) {
     const act = await Storage.getActivity(id);
-    if (!act) return;
-    document.getElementById('player-title').textContent = act.title;
-    const engines = {
-      quiz:       QuizActivity,
-      truefalse:  TrueFalseActivity,
-      dragdrop:   DragDropActivity,
-      matching:   MatchingActivity,
-      memory:     MemoryActivity,
-      imagelabel: ImageLabelActivity,
-      pointclick: PointClickActivity,
-    };
-    const engine = engines[act.type];
-    if (engine) engine.start(act);
-    this.showView('player');
+    if (act) this.playActivityFromData(act);
   },
+
 
   // ── Community ────────────────────────────────
   async renderCommunity() {
@@ -472,7 +460,50 @@ const App = {
     });
 
     this.renderDashboard();
-  }
+
+    // Check for shared activity in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedId = urlParams.get('sharedId');
+    if (sharedId) {
+      this.loadSharedActivity(sharedId);
+    }
+  },
+
+  async loadSharedActivity(id) {
+    try {
+      showInfoModal('Cargando actividad', '<div style="text-align:center;padding:2rem"><p>Obteniendo actividad compartida...</p><div class="spinner" style="margin:1rem auto">⏳</div></div>');
+      
+      const act = await Community.getActivity(id);
+      if (!act) throw new Error('No se encontró la actividad compartida.');
+      
+      closeInfoModal();
+      this.playActivityFromData(act);
+      showToast('Actividad compartida cargada con éxito', 'success');
+      
+      // Limpiar URL para no recargarla al refrescar
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (e) {
+      closeInfoModal();
+      showToast('Error al cargar link: ' + e.message, 'error');
+    }
+  },
+
+  playActivityFromData(act) {
+    document.getElementById('player-title').textContent = act.title;
+    const engines = {
+      quiz:       QuizActivity,
+      truefalse:  TrueFalseActivity,
+      dragdrop:   DragDropActivity,
+      matching:   MatchingActivity,
+      memory:     MemoryActivity,
+      imagelabel: ImageLabelActivity,
+      pointclick: PointClickActivity,
+    };
+    const engine = engines[act.type];
+    if (engine) engine.start(act);
+    this.showView('player');
+  },
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+

@@ -28,6 +28,13 @@ const Exporter = {
              <div class="share-opt-desc">Sube esta actividad al servidor público para que todos puedan descargarla.</div>
            </div>
          </button>
+         <button class="share-option-btn" id="sopt-link" style="background: rgba(0, 210, 255, 0.1); border-color: rgba(0, 210, 255, 0.3);">
+           <span class="share-opt-icon">🔗</span>
+           <div>
+             <div class="share-opt-title" style="color: #00d2ff;">Compartir Link Directo</div>
+             <div class="share-opt-desc">Crea un link único para que cualquiera pueda jugar sin descargar nada.</div>
+           </div>
+         </button>
        </div>`,
       () => {
         document.getElementById('sopt-json')?.addEventListener('click', () => {
@@ -55,9 +62,14 @@ const Exporter = {
             showToast('Error publicando: ' + e.message, 'error');
           }
         });
+        document.getElementById('sopt-link')?.addEventListener('click', () => {
+          closeInfoModal();
+          this.shareLink(activityId);
+        });
       }
     );
   },
+
 
   // ── Export single activity as JSON ───────────────
   async exportJSON(activityId) {
@@ -67,6 +79,47 @@ const Exporter = {
     this._download(blob, this._fname(act.title) + '.bellestudia.json');
     showToast('Actividad exportada como JSON ✅', 'success');
   },
+
+  // ── Share Link ──────────────────────────────────
+  async shareLink(activityId) {
+    const act = await Storage.getActivity(activityId);
+    if (!act) return;
+
+    if (!window.Community || typeof firebase === 'undefined') {
+      return showToast('Necesitas conexión a internet para compartir links.', 'error');
+    }
+
+    showToast('Generando link... ⏳', 'info');
+    try {
+      // Publicamos (o republicamos) para obtener un ID de nube
+      const cloudId = await Community.publishActivity(act, "Usuario Bellestudia");
+      
+      const baseUrl = window.location.href.split('?')[0];
+      const shareUrl = baseUrl + "?sharedId=" + cloudId;
+
+      
+      showInfoModal(
+        `🔗 Link generado`,
+        `<p style="margin-bottom: var(--sp-md)">Copia este link para compartir la actividad:</p>
+         <div style="display:flex; gap:0.5rem; margin-bottom:var(--sp-lg)">
+           <input type="text" id="share-url-input" class="form-input" value="${shareUrl}" readonly style="flex:1; font-size:0.85rem">
+           <button class="btn btn-primary" id="btn-copy-url">Copiar</button>
+         </div>
+         <p style="font-size:0.8rem; color:var(--text-muted)">Cualquiera con este link podrá jugar directamente a tu actividad.</p>`,
+        () => {
+          document.getElementById('btn-copy-url')?.addEventListener('click', () => {
+            const inp = document.getElementById('share-url-input');
+            inp.select();
+            document.execCommand('copy');
+            showToast('¡Link copiado al portapapeles! 📋', 'success');
+          });
+        }
+      );
+    } catch (e) {
+      showToast('Error al generar link: ' + e.message, 'error');
+    }
+  },
+
 
   // ── Import from JSON file ───────────────────────
   importJSON() {

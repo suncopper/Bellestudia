@@ -69,12 +69,13 @@ const Community = {
         });
       }
 
-      return true;
+      return docRef.id;
     } catch (e) {
       console.error("Error al publicar:", e);
       throw new Error(`No se pudo publicar: ${e.message}`);
     }
   },
+
 
   async getRecentActivities(limit = 20) {
     if (!db) throw new Error("Firebase no está conectado.");

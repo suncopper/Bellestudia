@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ecosistema Bellestudia: Creación y juego interactivo de actividades educativas.">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#8a2be2">
+  <title>Bellestudia | Ecosistema Educativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f1115;
+      --bg-darker: #08090b;
+      --primary: #8a2be2;
+      --primary-hover: #9c4be6;
+      --secondary: #00d2ff;
+      --text-light: #f8fafc; /* Even brighter white */
+      --text-muted: #cbd5e1; /* Much brighter for better contrast on mobile */
+      --glass-bg: rgba(10, 12, 16, 0.75); /* Darker and less transparent to block the bright blobs */
+      --glass-border: rgba(255, 255, 255, 0.15); /* Stronger border to define shape */
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: var(--bg-darker);
+      color: var(--text-light);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Fondo dinámico vibrante */
+    .bg-blobs {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.6;
+      animation: float 20s infinite ease-in-out alternate;
+    }
+    .blob-1 {
+      width: 400px; height: 400px;
+      background: var(--primary);
+      top: -10%; left: -10%;
+    }
+    .blob-2 {
+      width: 500px; height: 500px;
+      background: var(--secondary);
+      bottom: -20%; right: -10%;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 50px) scale(1.2); }
+    }
+
+    /* Layout principal */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 1;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--secondary);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 210, 255, 0.1);
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 8vw, 5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -2px;
+    }
+
+    .subtitle {
+      font-size: clamp(1.1rem, 2vw, 1.3rem);
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 4rem auto;
+      line-height: 1.6;
+    }
+
+    /* Cards interactivos */
+    .cards-wrapper {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+      gap: 2rem;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .app-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      text-decoration: none;
+      color: var(--text-light);
+      text-align: left;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(to bottom right, rgba(255,255,255,0.1), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 0;
+    }
+
+    .app-card:hover {
+      transform: translateY(-10px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 40px rgba(138, 43, 226, 0.2);
+    }
+
+    .app-card:hover::before {
+      opacity: 1;
+    }
+
+    .app-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-icon {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+      background: rgba(0, 0, 0, 0.3);
+      width: 80px; height: 80px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 20px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .card-desc {
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 2rem;
+      flex: 1;
+    }
+
+    .card-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: #fff;
+      padding: 0.8rem 1.5rem;
+      border-radius: 12px;
+      transition: all 0.3s;
+      width: max-content;
+    }
+
+    .card-btn svg {
+      width: 18px; height: 18px;
+      transition: transform 0.3s;
+    }
+
+    .app-card:hover .card-btn svg {
+      transform: translateX(5px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+      box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
+    }
+
+    /* ── Sección de Recursos ── */
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-bottom: 0.6rem;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 800;
+      color: var(--text-light);
+      margin-bottom: 0.6rem;
+      letter-spacing: -1px;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin: 0 auto 2.5rem auto;
+      max-width: 560px;
+      text-align: center;
+    }
+
+    .resources-section {
+      width: 100%;
+      max-width: 1100px;
+      margin-top: 5rem;
+      text-align: center;
+    }
+
+    .resources-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+      gap: 1.25rem;
+      width: 100%;
+    }
+
+    .resource-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px;
+      padding: 1.5rem 1.5rem 1.25rem;
+      text-decoration: none;
+      color: var(--text-light);
+      text-align: left;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .resource-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,210,255,0.07), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .resource-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0, 210, 255, 0.35);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.35), 0 0 30px rgba(0,210,255,0.12);
+    }
+
+    .resource-card:hover::before { opacity: 1; }
+
+    .resource-favicon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      object-fit: contain;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--glass-border);
+      padding: 5px;
+      flex-shrink: 0;
+    }
+
+    .resource-name {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-light);
+      line-height: 1.2;
+    }
+
+    .resource-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      flex: 1;
+    }
+
+    .resource-visit {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-top: 0.25rem;
+      transition: gap 0.2s ease;
+    }
+
+    .resource-card:hover .resource-visit { gap: 0.55rem; }
+
+    .category-subtitle {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+      text-align: left;
+      margin: 3.5rem 0 1.5rem 0;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .resources-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      margin-bottom: 2rem;
+    }
+
+
+    .divider {
+      width: 100%;
+      max-width: 1100px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--glass-border), transparent);
+      margin-top: 5rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      border-top: 1px solid var(--glass-border);
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    /* ── Responsive Móvil ── */
+    @media (max-width: 768px) {
+      .container {
+        padding: 2rem 1.5rem;
+      }
+      h1 {
+        font-size: clamp(2rem, 8vw, 2.5rem);
+        margin-bottom: 1rem;
+      }
+      .subtitle {
+        font-size: 1rem;
+        margin-bottom: 2.5rem;
+      }
+      .cards-wrapper {
+        gap: 1.5rem;
+      }
+      .app-card {
+        padding: 1.5rem;
+      }
+      .card-icon {
+        width: 60px; height: 60px; font-size: 2.2rem;
+        margin-bottom: 1rem;
+      }
+      .card-title {
+        font-size: 1.5rem; margin-bottom: 0.5rem;
+      }
+      .card-desc {
+        font-size: 0.95rem; margin-bottom: 1.5rem;
+      }
+      .card-btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .bg-blobs {
+        display: none;
+      }
+      .resources-section {
+        margin-top: 3.5rem;
+      }
+      .resources-grid {
+        gap: 1rem;
+      }
+      .resource-card {
+        padding: 1.25rem;
+      }
+    }
+
+      /* Tarjeta Motivacional */
+      .motivational-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 1.5rem 2rem;
+        max-width: 700px;
+        margin: 0 auto 4rem auto;
+        backdrop-filter: blur(10px);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #quote-text {
+        font-size: 1.1rem;
+        font-style: italic;
+        color: var(--text-light);
+        line-height: 1.4;
+      }
+      #quote-author {
+        font-size: 0.85rem;
+        color: var(--secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+  </style>
+</head>
+<body>
+
+  <!-- Elementos de fondo -->
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
+  <div class="container">
+    <div class="hero-tag">Todo en uno</div>
+    <h1>Ecosistema Bellestudia</h1>
+    <p class="subtitle">Crea actividades con Inteligencia Artificial, descárgalas, juégalas y compártelas con tus estudiantes.</p>
+
+    <!-- Sección Motivacional -->
+    <div class="motivational-card">
+      <p id="quote-text">Cargando inspiración...</p>
+      <p id="quote-author"></p>
+    </div>
+
+    <div class="cards-wrapper">
+      
+      <!-- Card Bellestudia App -->
+      <a href="quiz-app/index.html" class="app-card">
+        <div class="card-icon">❤️</div>
+        <h2 class="card-title">Bellestudia App</h2>
+        <p class="card-desc">Juega y crea actividades manualmente (quiz, drag&drop, memoria, etiquetas). Todas tus actividades se auto-descargan localmente.</p>
+        <span class="card-btn btn-secondary">
+          Abrir Aplicación 
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </span>
+      </a>
+
+      <!-- Card Bellestudia Pro -->
+      <a href="bellastudia-pro/index.html" class="app-card">
+        <div class="card-icon">💖</div>
+        <h2 class="card-title">Bellestudia Pro</h2>
+        <p class="card-desc">El generador mágico impulsado por Gemini AI. Sube tus PDFs y deja que la IA extraiga imágenes y cree la actividad automáticamente.</p>
+        <span class="card-btn btn-primary">
+          Usar Creador AI
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </span>
+      </a>
+
+    </div>
+
+    <!-- ── Recursos Recomendados ── -->
+    <div class="resources-section">
+
+      <p class="section-label">🔖 Recursos recomendados</p>
+      <h2 class="section-title">Herramientas para tu éxito</h2>
+      <p class="section-desc">Seleccionamos las mejores aplicaciones web para potenciar tu aprendizaje. Organizadas por categorías para que encuentres lo que necesitas.</p>
+
+      <!-- Categoría 1: Diseño y Documentos -->
+      <h3 class="category-subtitle">🎨 Diseño y Documentos</h3>
+      <div class="resources-grid">
+        <a href="https://www.canva.com/" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://www.canva.com/favicon.ico" alt="Canva">
+          <div class="resource-name">Canva</div>
+          <p class="resource-desc">Diseña presentaciones, infografías y carteles con plantillas profesionales.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+        <a href="https://slidesgo.com/es/" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://slidesgo.com/favicon.ico" alt="Slidesgo">
+          <div class="resource-name">Slidesgo</div>
+          <p class="resource-desc">Plantillas gratuitas para Google Slides y PowerPoint de alta calidad.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+        <a href="https://www.ilovepdf.com/es" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://www.ilovepdf.com/favicon.ico" alt="iLovePDF">
+          <div class="resource-name">iLovePDF</div>
+          <p class="resource-desc">Edita, combina, convierte y comprime PDFs fácilmente en tu navegador.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+      </div>
+
+      <!-- Categoría 2: Investigación y Escritura -->
+      <h3 class="category-subtitle">✍️ Investigación y Escritura</h3>
+      <div class="resources-grid">
+        <a href="https://scholar.google.es/" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://scholar.google.com/favicon.ico" alt="Google Scholar">
+          <div class="resource-name">Google Académico</div>
+          <p class="resource-desc">Busca artículos científicos, tesis y libros de fuentes académicas fiables.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+        <a href="https://www.scribbr.es/citar/generador/apa/" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://www.scribbr.es/favicon.ico" alt="Scribbr">
+          <div class="resource-name">Scribbr APA</div>
+          <p class="resource-desc">Generador automático de citas y bibliografía en formato APA.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+        <a href="https://languagetool.org/es" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://languagetool.org/favicon.ico" alt="LanguageTool">
+          <div class="resource-name">LanguageTool</div>
+          <p class="resource-desc">Corrector ortográfico y de estilo avanzado para tus trabajos escritos.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+        <a href="https://www.deepl.com/translator" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://www.deepl.com/favicon.ico" alt="DeepL">
+          <div class="resource-name">DeepL</div>
+          <p class="resource-desc">Traductor por IA de alta precisión para textos y documentos.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+      </div>
+
+      <!-- Categoría 3: IA y Organización -->
+      <h3 class="category-subtitle">🧠 IA y Organización</h3>
+      <div class="resources-grid">
+        <a href="https://notebooklm.google/students?hl=es" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://notebooklm.google/favicon.ico" alt="NotebookLM">
+          <div class="resource-name">NotebookLM</div>
+          <p class="resource-desc">Asistente de estudio de Google. Resume apuntes y genera audios explicativos.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+        <a href="https://www.wolframalpha.com/" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://www.wolframalpha.com/favicon.ico" alt="WolframAlpha">
+          <div class="resource-name">WolframAlpha</div>
+          <p class="resource-desc">Buscador de respuestas matemáticas, científicas y datos técnicos.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+        <a href="https://www.notion.so/" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://www.notion.so/images/favicon.ico" alt="Notion">
+          <div class="resource-name">Notion</div>
+          <p class="resource-desc">Espacio de trabajo todo en uno para organizar tus apuntes y tareas.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+        <a href="https://www.mentimeter.com/es-ES" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://www.mentimeter.com/favicon.ico" alt="Mentimeter">
+          <div class="resource-name">Mentimeter</div>
+          <p class="resource-desc">Crea presentaciones interactivas y encuestas en tiempo real.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+      </div>
+
+      <!-- Categoría 4: Plataformas Duoc UC -->
+      <h3 class="category-subtitle">🏫 Mi Institución</h3>
+      <div class="resources-grid">
+        <a href="https://campusvirtual.duoc.cl/ultra/stream" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://campusvirtual.duoc.cl/favicon.ico" alt="Duoc Campus">
+          <div class="resource-name">Campus Virtual Duoc</div>
+          <p class="resource-desc">Accede a tus clases, materiales de estudio y evaluaciones de Duoc UC.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+        <a href="https://bibliotecas.duoc.cl/inicio" target="_blank" rel="noopener noreferrer" class="resource-card">
+          <img class="resource-favicon" src="https://bibliotecas.duoc.cl/favicon.ico" alt="Duoc Biblio">
+          <div class="resource-name">Bibliotecas Duoc UC</div>
+          <p class="resource-desc">Busca libros, guías y recursos digitales en el catálogo institucional.</p>
+          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+  <footer>
+    <p>Bellestudia &copy; 2026 — Diseñado con ❤️ para estudiantes y profesores.</p>
+    <button id="pwa-install-btn" style="display:none; margin-top:1rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:white; padding:0.6rem 1.2rem; border-radius:100px; font-size:0.85rem; cursor:pointer; transition:all 0.3s;">
+      📲 Instalar Bellestudia como App
+    </button>
+  </footer>
+
+  <script>
+    const quotes = [
+      { text: "El éxito es la suma de pequeños esfuerzos repetidos día tras día.", author: "Robert Collier" },
+      { text: "No dejes que lo que no puedes hacer interfiera con lo que puedes hacer.", author: "John Wooden" },
+      { text: "La educación es el arma más poderosa que puedes usar para cambiar el mundo.", author: "Nelson Mandela" },
+      { text: "Cree en ti mismo y en todo lo que eres.", author: "Christian D. Larson" },
+      { text: "Tus talentos y habilidades mejorarán con el tiempo, pero para eso has de empezar.", author: "Martin Luther King" },
+      { text: "La mejor forma de predecir el futuro es creándolo.", author: "Peter Drucker" },
+      { text: "El aprendizaje es un tesoro que seguirá a su dueño a todas partes.", author: "Proverbio Chino" },
+      { text: "No hay ascensor al éxito, tienes que tomar las escaleras.", author: "Zig Ziglar" },
+      { text: "Lo que hoy parece un sacrificio, mañana será tu mayor orgullo.", author: "Anónimo" },
+      { text: "La disciplina es el puente entre tus metas y tus logros.", author: "Jim Rohn" },
+      { text: "Si te cansas, aprende a descansar, no a rendirte.", author: "Banksy" },
+      { text: "El genio se hace con un 1% de talento y un 99% de trabajo.", author: "Thomas Edison" },
+      { text: "Tu futuro depende de lo que hagas hoy, no mañana.", author: "Mahatma Gandhi" },
+      { text: "Cada error es una oportunidad para empezar de nuevo con más inteligencia.", author: "Henry Ford" },
+      { text: "La persistencia puede cambiar el fracaso en un logro extraordinario.", author: "Matt Biondi" },
+      { text: "El aprendizaje nunca agota la mente.", author: "Leonardo da Vinci" },
+      { text: "La motivación es lo que te pone en marcha. El hábito es lo que te mantiene.", author: "Jim Ryun" },
+      { text: "No cuentes los días, haz que los días cuenten.", author: "Muhammad Ali" },
+      { text: "Nada en la vida debe ser temido, solo comprendido. Ahora es el momento de comprender más.", author: "Marie Curie" },
+      { text: "He aprendido que la gente olvidará lo que dijiste y lo que hiciste, pero nunca olvidará cómo la hiciste sentir.", author: "Maya Angelou" },
+      { text: "Un niño, un profesor, un libro y una pluma pueden cambiar el mundo.", author: "Malala Yousafzai" },
+      { text: "El futuro pertenece a quienes creen en la belleza de sus sueños.", author: "Eleanor Roosevelt" },
+      { text: "Lo que buscamos está en nosotros mismos.", author: "Helen Keller" },
+      { text: "No hay barrera, cerradura ni cerrojo que puedas imponer a la libertad de mi mente.", author: "Virginia Woolf" },
+      { text: "Lo más difícil es la decisión de actuar, el resto es solo tenacidad.", author: "Amelia Earhart" },
+      { text: "Lucha por las cosas que te importan, pero hazlo de una forma que anime a otros a unirse a ti.", author: "Ruth Bader Ginsburg" },
+      { text: "Solo se vive una vez, pero si lo haces bien, una vez es suficiente.", author: "Mae West" },
+      { text: "Si no te gusta el camino en el que estás, empieza a pavimentar otro.", author: "Dolly Parton" },
+      { text: "La pregunta no es quién me va a dejar, sino quién me va a detener.", author: "Ayn Rand" },
+      { text: "Pies, para qué los quiero si tengo alas para volar.", author: "Frida Kahlo" },
+      { text: "El éxito no es definitivo, el fracaso no es fatal: lo que cuenta es el valor para continuar.", author: "Winston Churchill" },
+      { text: "La inteligencia sin ambición es un pájaro sin alas.", author: "Salvador Dalí" },
+      { text: "La vida es 10% lo que nos pasa y 90% cómo reaccionamos ante ello.", author: "Charles R. Swindoll" },
+      { text: "Siempre parece imposible hasta que se hace.", author: "Nelson Mandela" },
+      { text: "No busques los errores, busca un remedio.", author: "Henry Ford" },
+      { text: "La confianza en uno mismo es el primer secreto del éxito.", author: "Ralph Waldo Emerson" },
+      { text: "Aprende como si fueras a vivir siempre, vive como si fueras a morir mañana.", author: "Mahatma Gandhi" },
+      { text: "El éxito es caminar de fracaso en fracaso sin perder el entusiasmo.", author: "Winston Churchill" },
+      { text: "La vida comienza donde termina tu zona de confort.", author: "Neale Donald Walsch" },
+      { text: "No esperes. El tiempo nunca será el adecuado.", author: "Napoleon Hill" },
+      { text: "Acepta los retos para poder sentir la euforia de la victoria.", author: "George S. Patton" },
+      { text: "Toda aventura comienza con un sí.", author: "Anónimo" },
+      { text: "Para ser irremplazable, uno debe ser siempre diferente.", author: "Coco Chanel" },
+      { text: "El éxito no es cuánto dinero ganas, sino la diferencia que marcas en la vida de las personas.", author: "Michelle Obama" },
+      { text: "No dejes que nadie te diga que no puedes hacer algo.", author: "Katherine Johnson" },
+      { text: "He fallado una y otra vez en mi vida, por eso he tenido éxito.", author: "Michael Jordan" },
+      { text: "La ciencia no es solo una disciplina de razón, sino también de romance y pasión.", author: "Stephen Hawking" },
+      { text: "Haz una cosa cada día que te asuste.", author: "Eleanor Roosevelt" },
+      { text: "La mejor preparación para el mañana es hacer lo mejor posible hoy.", author: "H. Jackson Brown Jr." },
+      { text: "Si quieres algo que nunca has tenido, tendrás que hacer algo que nunca has hecho.", author: "Anónimo" },
+      { text: "No importa lo lento que vayas, siempre y cuando no te detengas.", author: "Confucio" },
+      { text: "El único límite a nuestra realización del mañana serán nuestras dudas de hoy.", author: "Franklin D. Roosevelt" },
+      { text: "La imaginación es el principio de la creación.", author: "George Bernard Shaw" },
+      { text: "Apunta a la luna. Si fallas, podrías dar a una estrella.", author: "William Clement Stone" },
+      { text: "No busques el momento perfecto, toma el momento y hazlo perfecto.", author: "Anónimo" },
+      { text: "El conocimiento es poder.", author: "Francis Bacon" },
+      { text: "La verdadera sabiduría está en reconocer la propia ignorancia.", author: "Sócrates" },
+      { text: "La mente es como un paracaídas, solo funciona si se abre.", author: "Albert Einstein" },
+      { text: "Donde hay educación no hay distinción de clases.", author: "Confucio" },
+      { text: "La pluma es más poderosa que la espada.", author: "Edward Bulwer-Lytton" }
+    ];
+
+
+
+    function setRandomQuote() {
+      const idx = Math.floor(Math.random() * quotes.length);
+      const q = quotes[idx];
+      document.getElementById('quote-text').textContent = q.text;
+      document.getElementById('quote-author').textContent = "— " + q.author;
+    }
+
+    window.addEventListener('DOMContentLoaded', setRandomQuote);
+
+    // ── Lógica de PWA (Instalación) ──
+    let deferredPrompt;
+    const installBtn = document.getElementById('pwa-install-btn');
+
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.log("SW error:", err));
+    }
+
+    // Capturar evento de instalación
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'inline-block';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        installBtn.style.display = 'none';
+      }
+      deferredPrompt = null;
+    });
+
+    // Ocultar botón si ya está instalada
+    window.addEventListener('appinstalled', () => {
+      installBtn.style.display = 'none';
+    });
+  </script>
+</body>
+</html>

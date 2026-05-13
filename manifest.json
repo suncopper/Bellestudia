@@ -1,0 +1,21 @@
+{
+  "name": "Bellestudia Ecosistema",
+  "short_name": "Bellestudia",
+  "description": "Ecosistema educativo con Inteligencia Artificial",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#08090b",
+  "theme_color": "#8a2be2",
+  "icons": [
+    {
+      "src": "raccanim.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "raccanim.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

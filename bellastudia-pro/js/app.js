@@ -16,8 +16,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRemoveFile = document.getElementById('btn-remove-file');
   const btnGenerate = document.getElementById('btn-generate');
   const modal = document.getElementById('loading-modal');
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const inputPanels = document.querySelectorAll('.input-panel');
+  const rawTextInput = document.getElementById('raw-text-input');
 
   let currentFile = null;
+
+  // ─── 0. Manejo de Tabs ────────────────────────────────────────────────────────
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach(b => b.classList.remove('active'));
+      inputPanels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.getAttribute('data-target');
+      document.getElementById(target).classList.add('active');
+    });
+  });
+
 
   // ─── 1. Manejo de API Key (LocalStorage) ─────────────────────────────────────
   const savedKey = localStorage.getItem('bellesturiapro_gemini_key');
@@ -48,12 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   dndZone.addEventListener('drop', e => {
     const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/pdf') {
-      handleFile(file);
-    } else {
-      showToast('Por favor, sube solo archivos PDF.', 'error');
-    }
+    handleFile(file);
   });
+
 
   fileInput.addEventListener('change', e => {
     if (e.target.files[0]) handleFile(e.target.files[0]);
@@ -70,6 +82,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function handleFile(file) {
+    if (!file) return;
+
+    // Validar tipos permitidos
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain'
+    ];
+    const isDocx = file.name.toLowerCase().endsWith('.docx');
+    const isTxt = file.name.toLowerCase().endsWith('.txt');
+
+    if (!allowedTypes.includes(file.type) && !isDocx && !isTxt) {
+      showToast('Formato no soportado. Usa PDF, DOCX o TXT.', 'error');
+      return;
+    }
+
     if (file.size > 20 * 1024 * 1024) { // Límite razonable 20MB
       showToast('El archivo es demasiado grande (máx 20MB).', 'error');
       return;
@@ -83,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dndZone.querySelector('p').style.display = 'none';
     dndZone.querySelector('.btn-secondary').style.display = 'none';
   }
+
 
   // ─── 3. Utilidades ───────────────────────────────────────────────────────────
   function showToast(msg, type = 'info') {
@@ -245,7 +274,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Recolección de datos inicial (Defensa total contra undefined)
     const apiKey = keyInput.value.trim();
     if (!apiKey) return showToast('Falta la API Key de Google Gemini.', 'error');
-    if (!currentFile) return showToast('Sube un archivo PDF primero.', 'error');
+
+    const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-target');
+    const isFileMode = activeTab === 'file-mode';
+
+    if (isFileMode && !currentFile) return showToast('Sube un archivo primero.', 'error');
+    if (!isFileMode && !rawTextInput.value.trim()) return showToast('Pega un texto primero.', 'error');
+
 
     const selectedType = document.querySelector('input[name="act-type"]:checked')?.value || 'quiz';
     const rawCount = document.getElementById('q-count')?.value || '10';
@@ -261,12 +296,45 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgress(10, 'Iniciando lectura de archivo...');
 
     try {
-      const base64Data = await fileToBase64(currentFile);
+      let contentPart = null;
+      let isPDF = false;
+
+      if (isFileMode) {
+        updateProgress(20, 'Preparando contenido...');
+        const fileName = currentFile.name.toLowerCase();
+
+        if (fileName.endsWith('.docx')) {
+          updateProgress(25, 'Extrayendo texto del documento Word...');
+          const arrayBuffer = await currentFile.arrayBuffer();
+          const result = await window.mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+          const extractedText = result.value;
+          if (!extractedText.trim()) throw new Error('El archivo Word parece estar vacío o no se pudo leer.');
+          contentPart = { text: "CONTENIDO DEL DOCUMENTO WORD:\n" + extractedText };
+          isPDF = false;
+        } 
+        else if (fileName.endsWith('.txt')) {
+          updateProgress(25, 'Leyendo archivo de texto...');
+          const text = await currentFile.text();
+          if (!text.trim()) throw new Error('El archivo de texto está vacío.');
+          contentPart = { text: "CONTENIDO DEL ARCHIVO TXT:\n" + text };
+          isPDF = false;
+        }
+        else {
+          // PDF o fallback (intentar enviar como inlineData)
+          const base64Data = await fileToBase64(currentFile);
+          contentPart = { inlineData: { mimeType: "application/pdf", data: base64Data } };
+          isPDF = true;
+        }
+      } else {
+        contentPart = { text: "CONTENIDO A PROCESAR:\n" + rawTextInput.value.trim() };
+      }
+
+
 
       let extractedImages = [];
       let pageCaptures = [];
 
-      if (useImages) {
+      if (useImages && isPDF) {
         updateProgress(30, 'Analizando contenido visual del PDF...');
         extractedImages = await extractImagesFromPDF(currentFile);
 
@@ -284,8 +352,9 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast(`He encontrado ${extractedImages.length} imágenes.`, 'success');
         }
       } else {
-        updateProgress(30, 'Extracción de imágenes omitida.');
+        updateProgress(30, isFileMode && !isPDF ? 'Imágenes no soportadas para este formato (solo PDF).' : 'Extracción de imágenes omitida.');
       }
+
 
       updateProgress(50, 'Consultando a la IA...');
 
@@ -303,11 +372,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const targetModel = availableModels.find(m => m.name.includes('flash'))?.name || availableModels[0].name;
 
-      const finalPrompt = buildPrompt(selectedType, finalCount, selectedLang, useImages);
+      const finalPrompt = buildPrompt(selectedType, finalCount, selectedLang, useImages && extractedImages.length > 0);
       const parts = [
         { text: finalPrompt },
-        { inlineData: { mimeType: "application/pdf", data: base64Data } }
+        contentPart
       ];
+
 
       if (extractedImages.length > 0) {
         parts.push({ text: "\n--- IMÁGENES EXTRAÍDAS ---\n" });
@@ -327,11 +397,17 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (!response.ok) {
-        if (response.status === 503) {
-          throw new Error('Gemini está saturado (503). Intenta desactivando "Incluir imágenes" o prueba de nuevo en unos momentos.');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Detalles del Error Gemini:', errorData);
+        
+        if (response.status === 503 || response.status === 429) {
+          throw new Error('El servicio de IA está saturado o has superado el límite. Intenta de nuevo en un minuto o desactiva las imágenes.');
         }
-        throw new Error('Error en API Gemini: ' + response.status);
+        
+        const apiMsg = errorData.error?.message || `Código ${response.status}`;
+        throw new Error('Error en API Gemini: ' + apiMsg);
       }
+
 
       const responseData = await response.json();
       const rawText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -340,8 +416,27 @@ document.addEventListener('DOMContentLoaded', () => {
       let jsonData;
       try {
         const jsonMatch = rawText.match(/```json\s*([\s\S]*?)```/);
-        jsonData = JSON.parse(jsonMatch ? jsonMatch[1] : rawText);
-      } catch (e) { throw new Error('Formato JSON inválido.'); }
+        const cleanJsonText = jsonMatch ? jsonMatch[1] : rawText;
+        jsonData = JSON.parse(cleanJsonText);
+        
+        // --- Normalización de Estructura ---
+        // A veces la IA envuelve todo en una propiedad raíz como "activity", "quiz", etc.
+        // Si no detectamos las llaves principales, buscamos un nivel más abajo.
+        const mainKeys = ['questions', 'statements', 'pairs', 'items', 'categories'];
+        const hasMainKey = mainKeys.some(k => jsonData[k]);
+        
+        if (!hasMainKey) {
+          for (const key in jsonData) {
+            if (typeof jsonData[key] === 'object' && jsonData[key] !== null) {
+              if (mainKeys.some(k => jsonData[key][k])) {
+                jsonData = jsonData[key];
+                break;
+              }
+            }
+          }
+        }
+      } catch (e) { throw new Error('La IA no generó un JSON válido. Intenta de nuevo.'); }
+
 
       updateProgress(90, 'Construyendo archivo final...');
 
@@ -362,12 +457,13 @@ document.addEventListener('DOMContentLoaded', () => {
         list.forEach(i => { if (!i.id) i.id = generateUUID(); });
       }
 
-      let cleanTitle = currentFile.name.replace(/\.pdf$/i, '');
+      let cleanTitle = isFileMode ? currentFile.name.replace(/\.(pdf|docx|txt)$/i, '') : "Texto_Pegado";
       cleanTitle = cleanTitle.replace(/^[\d\.\-\s_]+/g, ''); // Quita números y puntos al inicio (ej. 1.4.1_)
       cleanTitle = cleanTitle.replace(/^IA[:\s\-_]+/i, ''); // Quita un posible 'IA:' si ya lo trae
       cleanTitle = cleanTitle.replace(/[_\-]/g, ' '); // Cambia _ y - por espacios
       cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
       if (cleanTitle) cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+
 
       const activity = {
         id: generateUUID(),
@@ -450,7 +546,7 @@ Un objeto JSON con:
 
     const imageInstruction = includeImg ? `
 --- INSTRUCCIÓN DE IMÁGENES (CRITICAL) ---
-Te he proporcionado imágenes extraídas del PDF con identificadores como "img_0", "img_1", etc. 
+Te he proporcionado imágenes extraídas del documento con identificadores como "img_0", "img_1", etc. 
 PRIORIZA EL USO DE ESTAS IMÁGENES. Si una imagen es relevante para un concepto, úsala añadiendo la propiedad "image": "img_X" al objeto de la pregunta/ítem. 
 Queremos una actividad MUY VISUAL. No te limites solo a cuando sea indispensable; úsalas para motivar al estudiante.
 
@@ -458,12 +554,14 @@ EJEMPLO DE USO:
 { "text": "¿Qué órgano se muestra en la imagen?", "image": "img_2", "options": [...], "correct": 0 }
 ` : `
 --- NOTA SOBRE IMÁGENES ---
-NO incluyas ninguna propiedad "image" en tu respuesta JSON. Solo genera contenido textual basado en el PDF.
+NO incluyas ninguna propiedad "image" en tu respuesta JSON. Solo genera contenido textual basado en el documento proporcionado.
 `;
 
+
     return `
-Toma el documento PDF adjunto y crea una actividad educativa evaluativa de alta calidad.
+Toma el documento adjunto y crea una actividad educativa evaluativa de alta calidad.
 Debes crear exactamente ${count} ítems/preguntas extraídos de los conceptos clave.
+
 El idioma de salida debe ser estrictamente: ${lang}.
 
 ${imageInstruction}

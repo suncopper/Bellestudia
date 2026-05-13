@@ -27,7 +27,8 @@
           onerror="this.outerHTML='<div class=\'logo-icon\'>✨</div>'">
         <h1>Bellestudia<span>Pro</span></h1>
       </div>
-      <p class="subtitle">Transforma cualquier PDF en actividades interactivas al instante</p>
+      <p class="subtitle">Transforma PDF, Word o Texto en actividades interactivas al instante</p>
+
     </header>
 
     <main class="main-content">
@@ -59,26 +60,43 @@
         </div>
       </section>
 
-      <!-- Paso 2: Subir PDF -->
       <section class="card glass-card">
         <div class="card-header">
           <span class="step-num">2</span>
           <h2>Sube tu Documento</h2>
         </div>
-        <div class="pdf-upload-zone" id="drop-zone">
-          <input type="file" id="pdf-file" accept="application/pdf" hidden>
-          <div class="upload-icon">📄</div>
-          <h3>Arrastra tu archivo PDF aquí</h3>
-          <p>o</p>
-          <button class="btn btn-secondary" onclick="document.getElementById('pdf-file').click()">Explorar
-            archivos</button>
-          <div class="file-info" id="file-info" style="display:none;">
-            <span class="file-name" id="file-name">archivo.pdf</span>
-            <span class="file-size" id="file-size">(2 MB)</span>
-            <button class="btn-remove" id="btn-remove-file" title="Quitar">✖</button>
+
+        <div class="input-tabs">
+          <button class="tab-btn active" data-target="file-mode">📄 Archivo</button>
+          <button class="tab-btn" data-target="text-mode">✍️ Pegar Texto</button>
+        </div>
+
+        <!-- Modo Archivo -->
+        <div id="file-mode" class="input-panel active">
+          <div class="pdf-upload-zone" id="drop-zone">
+            <input type="file" id="pdf-file" accept="application/pdf,.docx,text/plain" hidden>
+            <div class="upload-icon">📄</div>
+            <h3>Arrastra tu archivo aquí</h3>
+            <p>PDF, Word (.docx) o Texto (.txt)</p>
+            <button class="btn btn-secondary" onclick="document.getElementById('pdf-file').click()">Explorar
+              archivos</button>
+            <div class="file-info" id="file-info" style="display:none;">
+              <span class="file-name" id="file-name">archivo.pdf</span>
+              <span class="file-size" id="file-size">(2 MB)</span>
+              <button class="btn-remove" id="btn-remove-file" title="Quitar">✖</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modo Texto -->
+        <div id="text-mode" class="input-panel">
+          <div class="text-input-container">
+            <label for="raw-text-input">Pega aquí el contenido que quieres estudiar:</label>
+            <textarea id="raw-text-input" placeholder="Ejemplo: La fotosíntesis es el proceso mediante el cual las plantas..."></textarea>
           </div>
         </div>
       </section>
+
 
       <!-- Paso 3: Configurar Actividad -->
       <section class="card glass-card">
@@ -204,14 +222,16 @@
 
   <div id="toast-container"></div>
 
-  <!-- Incluir scripts (PDF.js y lógica) -->
+  <!-- Incluir scripts (PDF.js, Mammoth para DOCX y lógica) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <script>
     // Configurar worker de pdf.js
     if (window.pdfjsLib) {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
     }
   </script>
+
   <script src="js/app.js"></script>
 </body>
 

@@ -285,7 +285,8 @@ const App = {
     grid.innerHTML = filtered.map(a => {
       const info = this._typeInfo(a.type);
       const date = new Date(a.createdAt).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
-      const d    = a.data;
+      const d    = a.data || {};
+
       const cnt  = d.questions?.length || d.statements?.length || d.items?.length || d.pairs?.length
                  || d.images?.reduce((s, img) => s + img.zones.length, 0) || 0;
       const cntLabel = d.images

@@ -657,3 +657,70 @@ select:focus {
     font-size: 2.2rem;
   }
 }
+
+/* --- Nuevos estilos para soporte Multi-input --- */
+
+.input-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.25rem;
+  border-radius: var(--radius-md);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: calc(var(--radius-md) - 4px);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.tab-btn.active {
+  background: var(--secondary);
+  color: var(--text-main);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.input-panel {
+  display: none;
+}
+
+.input-panel.active {
+  display: block;
+}
+
+.text-input-container label {
+  margin-bottom: 0.75rem;
+}
+
+#raw-text-input {
+  width: 100%;
+  min-height: 200px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: all 0.2s;
+}
+
+#raw-text-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.1);
+}

@@ -10,6 +10,12 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
     rel="stylesheet">
+  <script>
+    (function() {
+      const theme = localStorage.getItem('bellestudia_theme') || 'dark';
+      if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    })();
+  </script>
   <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -26,10 +32,25 @@
         <img src="assets/logo.png" alt="Bellestudia" class="app-logo" id="main-logo"
           onerror="this.outerHTML='<div class=\'logo-icon\'>✨</div>'">
         <h1>Bellestudia<span>Pro</span></h1>
+        <button id="btn-menu-pro" aria-label="Menú" style="background: var(--bg-surface); border: 1px solid var(--border); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; color: var(--text-main); font-size: 1.2rem; margin-left: 1rem; transition: all 0.3s; display: flex; align-items: center; justify-content: center;">☰</button>
       </div>
       <p class="subtitle">Transforma PDF, Word o Texto en actividades interactivas al instante</p>
 
     </header>
+
+    <!-- ════════════ SIDEBAR PRO ════════════ -->
+    <div id="pro-sidebar-overlay" class="sidebar-overlay"></div>
+    <aside id="pro-sidebar" class="sidebar-pro">
+      <div class="sidebar-pro-header">
+        <span class="logo-text" style="font-size: 1.2rem; font-weight: bold; color: var(--text-main);">Menú</span>
+        <button class="btn btn-icon" id="btn-close-sidebar-pro" style="font-size: 1rem; border: none; background: transparent; cursor: pointer;">✖</button>
+      </div>
+      <div class="sidebar-pro-content">
+        <button class="sidebar-pro-btn" id="btn-theme-sidebar">☀️ Modo Claro</button>
+        <hr class="sidebar-pro-divider">
+        <button class="sidebar-pro-btn" onclick="window.location.href='../index.html'">⬅️ Volver a Bellestudia</button>
+      </div>
+    </aside>
 
     <main class="main-content">
 
@@ -53,9 +74,6 @@
                   Studio</a> y entra con tu cuenta de Google.</li>
               <li>Haz clic en el botón azul <strong>"Create API Key"</strong>.</li>
               <li>Copia el código largo que se genera y pégalo aquí.</li>
-            </ol>
-            <p class="small-text text-muted">Aviso: Tu clave se guarda de forma segura en tu propio navegador, jamás se
-              envía a nuestros servidores (porque no tenemos servidores 😉).</p>
           </div>
         </div>
       </section>

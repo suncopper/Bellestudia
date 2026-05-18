@@ -10,6 +10,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      const theme = localStorage.getItem('bellestudia_theme') || 'dark';
+      if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    })();
+  </script>
   <style>
     :root {
       --bg-dark: #0f1115;
@@ -23,6 +29,31 @@
       --glass-border: rgba(255, 255, 255, 0.15); /* Stronger border to define shape */
       --font-display: 'Outfit', sans-serif;
       --font-body: 'Inter', sans-serif;
+    }
+
+    [data-theme="light"] {
+      --bg-dark: #fce7f3;
+      --bg-darker: #fdf2f8;
+      --primary: #db2777;
+      --primary-hover: #be185d;
+      --secondary: #9333ea;
+      --text-light: #4c1d95;
+      --text-muted: #6b21a8;
+      --glass-bg: rgba(255, 255, 255, 0.65);
+      --glass-border: rgba(219, 39, 119, 0.25);
+    }
+
+    [data-theme="light"] h1 {
+      background: linear-gradient(135deg, var(--text-light) 0%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    [data-theme="light"] .tool-icon,
+    [data-theme="light"] .tool-title,
+    [data-theme="light"] .category-subtitle {
+      color: var(--text-light);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -469,6 +500,10 @@
     <div class="blob blob-2"></div>
   </div>
 
+  <button id="theme-toggle" aria-label="Cambiar tema" style="position: absolute; top: 1.5rem; right: 1.5rem; background: var(--glass-bg); border: 1px solid var(--glass-border); width: 45px; height: 45px; border-radius: 50%; cursor: pointer; color: var(--text-light); font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 100; transition: all 0.3s; backdrop-filter: blur(10px);">
+    ☀️
+  </button>
+
   <div class="container">
     <div class="hero-tag">Todo en uno</div>
     <h1>Ecosistema Bellestudia</h1>
@@ -694,7 +729,42 @@
       document.getElementById('quote-author').textContent = "— " + q.author;
     }
 
-    window.addEventListener('DOMContentLoaded', setRandomQuote);
+    window.addEventListener('DOMContentLoaded', () => {
+      setRandomQuote();
+      
+      // Favicon fallback logic
+      document.querySelectorAll('.resource-card').forEach(card => {
+        const img = card.querySelector('.resource-favicon');
+        if (!img) return;
+        const name = card.querySelector('.resource-name').textContent.toLowerCase();
+        let emoji = '🔗';
+        if (name.includes('canva') || name.includes('slidesgo') || name.includes('pdf')) emoji = '🎨';
+        else if (name.includes('google') || name.includes('scribbr') || name.includes('language') || name.includes('deepl')) emoji = '✍️';
+        else if (name.includes('notebook') || name.includes('wolfram') || name.includes('notion') || name.includes('menti')) emoji = '🧠';
+        else if (name.includes('duoc')) emoji = '🏫';
+        
+        img.onerror = function() {
+          this.outerHTML = `<div class="emoji-fallback" style="font-size: 2rem; margin-bottom: 0.5rem; line-height: 1.2;">${emoji}</div>`;
+        };
+      });
+
+      const themeBtn = document.getElementById('theme-toggle');
+      const root = document.documentElement;
+      themeBtn.textContent = root.getAttribute('data-theme') === 'light' ? '🌙' : '☀️';
+      
+      themeBtn.addEventListener('click', () => {
+        const isLight = root.getAttribute('data-theme') === 'light';
+        if (isLight) {
+          root.removeAttribute('data-theme');
+          localStorage.setItem('bellestudia_theme', 'dark');
+          themeBtn.textContent = '☀️';
+        } else {
+          root.setAttribute('data-theme', 'light');
+          localStorage.setItem('bellestudia_theme', 'light');
+          themeBtn.textContent = '🌙';
+        }
+      });
+    });
 
     // ── Lógica de PWA (Instalación) ──
     let deferredPrompt;

@@ -22,6 +22,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentFile = null;
 
+  // ─── Tema (Modo Claro/Oscuro) ────────────────────────────────────────────────
+  const themeBtnSidebar = document.getElementById('btn-theme-sidebar');
+  if (themeBtnSidebar) {
+    const rootPro = document.documentElement;
+    themeBtnSidebar.textContent = rootPro.getAttribute('data-theme') === 'light' ? '🌙 Modo Oscuro' : '☀️ Modo Claro';
+    themeBtnSidebar.addEventListener('click', () => {
+      const isLight = rootPro.getAttribute('data-theme') === 'light';
+      if (isLight) {
+        rootPro.removeAttribute('data-theme');
+        localStorage.setItem('bellestudia_theme', 'dark');
+        themeBtnSidebar.textContent = '☀️ Modo Claro';
+      } else {
+        rootPro.setAttribute('data-theme', 'light');
+        localStorage.setItem('bellestudia_theme', 'light');
+        themeBtnSidebar.textContent = '🌙 Modo Oscuro';
+      }
+    });
+  }
+
+  // ─── Sidebar Pro ─────────────────────────────────────────────────────────────
+  const btnMenuPro = document.getElementById('btn-menu-pro');
+  const sidebarPro = document.getElementById('pro-sidebar');
+  const sidebarOverlayPro = document.getElementById('pro-sidebar-overlay');
+  const btnCloseSidebarPro = document.getElementById('btn-close-sidebar-pro');
+
+  const toggleSidebarPro = (show) => {
+    if (show) {
+      sidebarPro.classList.add('active');
+      sidebarOverlayPro.classList.add('active');
+    } else {
+      sidebarPro.classList.remove('active');
+      sidebarOverlayPro.classList.remove('active');
+    }
+  };
+
+  if (btnMenuPro) btnMenuPro.addEventListener('click', () => toggleSidebarPro(true));
+  if (btnCloseSidebarPro) btnCloseSidebarPro.addEventListener('click', () => toggleSidebarPro(false));
+  if (sidebarOverlayPro) sidebarOverlayPro.addEventListener('click', () => toggleSidebarPro(false));
+
   // ─── 0. Manejo de Tabs ────────────────────────────────────────────────────────
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {

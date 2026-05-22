@@ -161,8 +161,15 @@ const Creator = {
   // ────────────────────────────────────────────
   _quizForm(act, all) {
     const qs = act?.data?.questions || [this._newQ()];
+    const randQ = act?.data?.randomizeQuestions ?? false;
     return `<div class="creator-form">
       ${this._titleField(act?.title || '', 'Ej: Quiz de Historia', act?.subject || '', act?.topic || '', all)}
+      <div class="form-group" style="margin-bottom:var(--sp-md);">
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; background:var(--bg-surface); padding:0.75rem; border-radius:var(--radius-md); border:1px solid var(--border);">
+          <input type="checkbox" id="quiz-rand-questions" style="width:18px;height:18px;accent-color:var(--primary);" ${randQ ? 'checked' : ''}>
+          <span>Aleatorizar el orden de las preguntas al jugar</span>
+        </label>
+      </div>
       <div class="question-list" id="q-list">
         ${qs.map((q, i) => this._quizQCard(q, i)).join('')}
       </div>
@@ -338,6 +345,9 @@ const Creator = {
     const pairs = act?.data?.pairs || [this._newPair()];
     return `<div class="creator-form">
       ${this._titleField(act?.title || '', 'Ej: Países y sus capitales', act?.subject || '', act?.topic || '', all)}
+      <div class="question-card" style="background:var(--bg-surface)">
+        <p style="font-size:.85rem;color:var(--text-muted)">💡 <strong>¡Tip!</strong> Puedes repetir el mismo Término en varios pares si quieres que se conecte a múltiples definiciones/pares. En el juego se agruparán automáticamente en un solo bloque.</p>
+      </div>
       <div class="question-list" id="q-list">
         ${pairs.map((p, i) => this._matchCard(p, i)).join('')}
       </div>
@@ -891,7 +901,9 @@ const Creator = {
       return { id: c.dataset.id || App.uid(), text, options: opts, correct: chk ? parseInt(chk.value) : 0, image };
     });
 
-    return { questions };
+    const randomizeQuestions = document.getElementById('quiz-rand-questions')?.checked || false;
+
+    return { randomizeQuestions, questions };
   },
 
   _collectTF() {

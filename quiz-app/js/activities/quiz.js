@@ -3,6 +3,7 @@
  */
 const QuizActivity = {
   activity: null,
+  questions: [],
   currentIndex: 0,
   score: 0,
   answered: false,
@@ -12,11 +13,35 @@ const QuizActivity = {
     this.currentIndex = 0;
     this.score = 0;
     this.answered = false;
+
+    // Clone and shuffle options (and questions if enabled)
+    let qs = activity.data.questions.map(q => {
+      let opts = q.options.map((text, i) => ({ text, isCorrect: i === q.correct }));
+      this._shuffleArray(opts);
+      return {
+        ...q,
+        options: opts.map(o => o.text),
+        correct: opts.findIndex(o => o.isCorrect)
+      };
+    });
+
+    if (activity.data.randomizeQuestions) {
+      this._shuffleArray(qs);
+    }
+
+    this.questions = qs;
     this.render();
   },
 
+  _shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  },
+
   render() {
-    const qs = this.activity.data.questions;
+    const qs = this.questions;
     const container = document.getElementById('player-content');
 
     if (this.currentIndex >= qs.length) {
@@ -69,7 +94,7 @@ const QuizActivity = {
     if (this.answered) return;
     this.answered = true;
 
-    const q = this.activity.data.questions[this.currentIndex];
+    const q = this.questions[this.currentIndex];
     const correct = idx === q.correct;
     App.playSound(correct ? 'correct' : 'incorrect');
     if (correct) this.score++;
@@ -91,7 +116,7 @@ const QuizActivity = {
   next() { this.currentIndex++; this.render(); },
 
   renderScore(container) {
-    const total = this.activity.data.questions.length;
+    const total = this.questions.length;
     const pct = Math.round((this.score / total) * 100);
     const { emoji, msg } = scoreMessage(pct);
 

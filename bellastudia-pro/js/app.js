@@ -72,6 +72,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ─── Auto Toggle Logic ───
+  const qCountInput = document.getElementById('q-count');
+  const qAutoToggle = document.getElementById('q-auto-toggle');
+  if (qCountInput && qAutoToggle) {
+    qAutoToggle.addEventListener('change', () => {
+      qCountInput.disabled = qAutoToggle.checked;
+      qCountInput.style.opacity = qAutoToggle.checked ? '0.4' : '1';
+    });
+  }
+
 
   // ─── 1. Manejo de API Key (LocalStorage) ─────────────────────────────────────
   const savedKey = localStorage.getItem('bellesturiapro_gemini_key');
@@ -131,9 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     const isDocx = file.name.toLowerCase().endsWith('.docx');
     const isTxt = file.name.toLowerCase().endsWith('.txt');
+    const isImage = file.type.startsWith('image/');
 
-    if (!allowedTypes.includes(file.type) && !isDocx && !isTxt) {
-      showToast('Formato no soportado. Usa PDF, DOCX o TXT.', 'error');
+    if (!allowedTypes.includes(file.type) && !isDocx && !isTxt && !isImage) {
+      showToast('Formato no soportado. Usa PDF, DOCX, TXT o Imágenes.', 'error');
       return;
     }
 
@@ -322,8 +333,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     const selectedType = document.querySelector('input[name="act-type"]:checked')?.value || 'quiz';
-    const rawCount = document.getElementById('q-count')?.value || '10';
-    const finalCount = parseInt(rawCount) || 10;
+    const isAutoCount = document.getElementById('q-auto-toggle')?.checked;
+    const rawCountStr = document.getElementById('q-count')?.value || '10';
+    const finalCount = isAutoCount ? 'Auto' : (parseInt(rawCountStr) || 10);
     const selectedLang = document.getElementById('q-lang')?.value || 'Español';
     const useImages = document.getElementById('include-images')?.checked ?? true;
 
@@ -356,6 +368,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const text = await currentFile.text();
           if (!text.trim()) throw new Error('El archivo de texto está vacío.');
           contentPart = { text: "CONTENIDO DEL ARCHIVO TXT:\n" + text };
+          isPDF = false;
+        }
+        else if (currentFile.type.startsWith('image/')) {
+          updateProgress(25, 'Procesando imagen...');
+          const base64Data = await fileToBase64(currentFile);
+          contentPart = { inlineData: { mimeType: currentFile.type, data: base64Data } };
           isPDF = false;
         }
         else {
@@ -492,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (jsonData.pairs) jsonData.pairs.forEach(p => { processItem(p); if (!p.id) p.id = generateUUID(); });
 
 
-      let cleanTitle = isFileMode ? currentFile.name.replace(/\.(pdf|docx|txt)$/i, '') : "Texto_Pegado";
+      let cleanTitle = isFileMode ? currentFile.name.replace(/\.(pdf|docx|txt|png|jpg|jpeg|webp)$/i, '') : "Texto_Pegado";
       cleanTitle = cleanTitle.replace(/^[\d\.\-\s_]+/g, ''); // Quita números y puntos al inicio (ej. 1.4.1_)
       cleanTitle = cleanTitle.replace(/^IA[:\s\-_]+/i, ''); // Quita un posible 'IA:' si ya lo trae
       cleanTitle = cleanTitle.replace(/[_\-]/g, ' '); // Cambia _ y - por espacios
@@ -553,10 +571,10 @@ Cada objeto tiene:
       case "matching":
         schemaDesc = `
 Un objeto JSON con la propiedad "pairs" que es un array de objetos.
-Cada objeto representa un par related y tiene:
+Cada objeto representa un par relacionado y tiene:
 - "id": (string) un ID único corto.
-- "left": (string) concepto principal.
-- "right": (string) definición o pareja.
+- "left": (string) concepto principal. (Nota importante: Puedes y debes repetir exactamente el mismo string de 'left' en varios pares distintos si ese concepto principal tiene múltiples definiciones o partes en la columna 'right').
+- "right": (string) definición o pareja correspondiente.
 - "image": (opcional, string como "img_2") ID de la imagen para el término de la izquierda.`;
         break;
       case "memory":
@@ -593,9 +611,11 @@ NO incluyas ninguna propiedad "image" en tu respuesta JSON. Solo genera contenid
 `;
 
 
+    const countText = count === 'Auto' ? 'TODOS los' : `exactamente ${count}`;
+
     return `
 Toma el documento adjunto y crea una actividad educativa evaluativa de alta calidad.
-Debes crear exactamente ${count} ítems/preguntas extraídos de los conceptos clave.
+Debes crear ${countText} ítems/preguntas extraídos de los conceptos clave. Si el texto es una tabla o listado estructurado, asegúrate de extraer y procesar cada elemento de forma exhaustiva.
 
 El idioma de salida debe ser estrictamente: ${lang}.
 

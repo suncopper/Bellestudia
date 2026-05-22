@@ -4,16 +4,39 @@
 const MatchingActivity = {
   activity: null,
   shuffledRight: [],
-  selectedLeft: null,
+  uniqueLefts: [],
+  selectedLeftGroup: null,
   selectedRight: null,
-  matchedPairs: [],    // [{ leftId, rightId }] — only correct pairs
+  matchedPairs: [],    // [rightId] — correct right pairs that have been matched
   showIncorrect: false,
   score: 0,
 
   start(activity) {
     this.activity = activity;
     this.shuffledRight = this._shuffle([...activity.data.pairs]);
-    this.selectedLeft = null;
+    
+    this.uniqueLefts = [];
+    const leftMap = new Map();
+    let groupIdCounter = 0;
+    
+    activity.data.pairs.forEach(pair => {
+      const text = (pair.left || '').trim();
+      if (!leftMap.has(text)) {
+        const gid = 'g_' + (groupIdCounter++);
+        leftMap.set(text, gid);
+        this.uniqueLefts.push({
+          id: gid,
+          text: text,
+          image: pair.image,
+          allIds: []
+        });
+      }
+      const gid = leftMap.get(text);
+      const group = this.uniqueLefts.find(u => u.id === gid);
+      group.allIds.push(pair.id);
+    });
+
+    this.selectedLeftGroup = null;
     this.selectedRight = null;
     this.matchedPairs = [];
     this.showIncorrect = false;
@@ -35,9 +58,9 @@ const MatchingActivity = {
     const pending = total - this.score;
     const container = document.getElementById('player-content');
 
-    const leftHtml = pairs.map(pair => {
-      const matched  = this.matchedPairs.some(m => m.leftId === pair.id);
-      const selected = this.selectedLeft === pair.id;
+    const leftHtml = this.uniqueLefts.map(group => {
+      const matched = group.allIds.every(id => this.matchedPairs.includes(id));
+      const selected = this.selectedLeftGroup === group.id;
       const isIncErr = this.showIncorrect && selected;
 
       let cls = 'matching-item';
@@ -46,12 +69,12 @@ const MatchingActivity = {
       else if (selected)  cls += ' selected';
 
       const disabled = matched ? 'style="cursor:default"' : '';
-      const imgHtml = pair.image ? `<img src="${pair.image}" style="max-width:100px; max-height:100px; display:block; margin:0 auto 0.5rem; border-radius:4px; pointer-events:none;">` : '';
-      return `<div class="${cls}" data-left="${pair.id}" ${disabled}>${imgHtml}${App.esc(pair.left)}</div>`;
+      const imgHtml = group.image ? `<img src="${group.image}" style="max-width:100px; max-height:100px; display:block; margin:0 auto 0.5rem; border-radius:4px; pointer-events:none;">` : '';
+      return `<div class="${cls}" data-left="${group.id}" ${disabled}>${imgHtml}${App.esc(group.text)}</div>`;
     }).join('');
 
     const rightHtml = this.shuffledRight.map(pair => {
-      const matched  = this.matchedPairs.some(m => m.rightId === pair.id);
+      const matched  = this.matchedPairs.includes(pair.id);
       const selected = this.selectedRight === pair.id;
       const isIncErr = this.showIncorrect && selected;
 
@@ -99,28 +122,31 @@ const MatchingActivity = {
     });
   },
 
-  _clickLeft(id) {
-    if (this.matchedPairs.some(m => m.leftId === id)) return;
+  _clickLeft(gid) {
+    const group = this.uniqueLefts.find(u => u.id === gid);
+    if (group && group.allIds.every(id => this.matchedPairs.includes(id))) return;
     if (this.showIncorrect) return;
-    this.selectedLeft = (this.selectedLeft === id) ? null : id;
+    this.selectedLeftGroup = (this.selectedLeftGroup === gid) ? null : gid;
     this._tryMatch();
   },
 
   _clickRight(id) {
-    if (this.matchedPairs.some(m => m.rightId === id)) return;
+    if (this.matchedPairs.includes(id)) return;
     if (this.showIncorrect) return;
     this.selectedRight = (this.selectedRight === id) ? null : id;
     this._tryMatch();
   },
 
   _tryMatch() {
-    if (this.selectedLeft && this.selectedRight) {
-      const correct = this.selectedLeft === this.selectedRight; // same pair id
+    if (this.selectedLeftGroup && this.selectedRight) {
+      const group = this.uniqueLefts.find(u => u.id === this.selectedLeftGroup);
+      const correct = group && group.allIds.includes(this.selectedRight);
+      
       if (correct) {
         App.playSound('correct');
-        this.matchedPairs.push({ leftId: this.selectedLeft, rightId: this.selectedRight });
+        this.matchedPairs.push(this.selectedRight);
         this.score++;
-        this.selectedLeft = null;
+        this.selectedLeftGroup = null;
         this.selectedRight = null;
         this.render();
 
@@ -134,7 +160,7 @@ const MatchingActivity = {
         this.render();
         setTimeout(() => {
           this.showIncorrect = false;
-          this.selectedLeft = null;
+          this.selectedLeftGroup = null;
           this.selectedRight = null;
           this.render();
         }, 900);

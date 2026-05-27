@@ -425,7 +425,16 @@ const Creator = {
   // ────────────────────────────────────────────
   _imgLabelForm(act, all) {
     Creator._imgData = act?.data?.images
-      ? act.data.images.map(img => ({ id: img.id, src: img.src, zones: [...(img.zones || [])] }))
+      ? act.data.images.map(img => ({
+          id: img.id,
+          src: img.src,
+          zones: (img.zones || []).map(z => {
+            if (z.type === 'box' && !z.labels) {
+              z.labels = z.label ? z.label.split(',').map(s => s.trim()).filter(Boolean) : [];
+            }
+            return z;
+          })
+        }))
       : [];
 
     return `<div class="creator-form">
@@ -633,13 +642,17 @@ const Creator = {
       // The label pin
       const pin = document.createElement('div');
       pin.className = 'creator-zone-pin draggable-pin';
+      const isBox = (z.type === 'box');
+      if (isBox) {
+        pin.classList.add('creator-zone-pin-box');
+      }
       pin.dataset.zoneId = z.id;
       pin.style.left = lx + '%';
       pin.style.top  = ly + '%';
       pin.title = '↕ Arrastra para mover';
       pin.innerHTML  = `
         <span class="zone-pin-drag-handle">⠿</span>
-        <span class="zone-pin-label">${Creator._e(z.label)}</span>
+        <span class="zone-pin-label">${isBox ? `📦 [${Creator._e((z.labels || []).join(', '))}]` : Creator._e(z.label)}</span>
         <button class="zone-pin-del" title="Eliminar zona">✕</button>`;
       pin.querySelector('.zone-pin-del').addEventListener('click', ev => {
         ev.stopPropagation();
@@ -692,6 +705,7 @@ const Creator = {
         <option value="pin">📍 Punto</option>
         <option value="arrow">↗️ Flecha</option>
         <option value="circle">⭕ Círculo</option>
+        <option value="box">📦 Caja (Varias etiquetas)</option>
       </select>
       <input type="text" class="zone-label-inp" placeholder="Nombre de la estructura…">
       <button class="zone-inp-ok" title="Confirmar">✓</button>
@@ -701,6 +715,14 @@ const Creator = {
     const inp = popup.querySelector('.zone-label-inp');
     const typeSel = popup.querySelector('.zone-type-sel');
     inp.focus();
+
+    typeSel.addEventListener('change', () => {
+      if (typeSel.value === 'box') {
+        inp.placeholder = "Etiquetas separadas por comas (ej: GH, TSH, ACTH)...";
+      } else {
+        inp.placeholder = "Nombre de la estructura…";
+      }
+    });
 
     const confirm = () => {
       const label = inp.value.trim();
@@ -734,6 +756,9 @@ const Creator = {
     if (type === 'circle') {
       zone.size = 10;
     }
+    if (type === 'box') {
+      zone.labels = label.split(',').map(s => s.trim()).filter(Boolean);
+    }
     
     imgObj.zones.push(zone);
     this._renderZoneMarkers(imgId, wrapper);
@@ -758,7 +783,14 @@ const Creator = {
   _updateWordBankPreview() {
     const preview = document.getElementById('word-bank-preview');
     if (!preview) return;
-    const labels = Creator._imgData.flatMap(img => img.zones.map(z => z.label));
+    const labels = Creator._imgData.flatMap(img =>
+      img.zones.flatMap(z => {
+        if (z.type === 'box') {
+          return z.labels || [];
+        }
+        return [z.label];
+      })
+    );
     preview.innerHTML = labels.length
       ? labels.map(l => `<span class="word-bank-preview-chip">${Creator._e(l)}</span>`).join('')
       : '<em style="color:var(--text-muted);font-size:.82rem">Agrega zonas para ver el banco aquí</em>';

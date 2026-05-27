@@ -25,7 +25,17 @@ const ImageLabelActivity = {
 
   _buildBank() {
     const entries = this.activity.data.images.flatMap(img =>
-      img.zones.map(z => ({ id: z.id + '_bw', label: z.label, zoneId: z.id }))
+      img.zones.flatMap(z => {
+        if (z.type === 'box') {
+          return (z.labels || []).map((label, idx) => ({
+            id: `${z.id}_bw_${idx}`,
+            label: label,
+            zoneId: z.id
+          }));
+        } else {
+          return [{ id: z.id + '_bw', label: z.label, zoneId: z.id }];
+        }
+      })
     );
     return this._shuffle([...entries]);
   },
@@ -44,13 +54,23 @@ const ImageLabelActivity = {
     const img  = images[this._imgIdx];
     const total = images.length;
 
-    const placed   = new Set(Object.values(this._answers));
+    const placed = new Set();
+    Object.values(this._answers).forEach(val => {
+      if (Array.isArray(val)) {
+        val.forEach(v => placed.add(v));
+      } else if (val) {
+        placed.add(val);
+      }
+    });
     const available = this._bank.filter(e => !placed.has(e.id));
 
     // Count total correct/total for progress
     const allZones = images.flatMap(i => i.zones);
     const totalZones = allZones.length;
-    const filledCount = Object.keys(this._answers).length;
+    const filledCount = Object.entries(this._answers).filter(([zid, ans]) => {
+      if (Array.isArray(ans)) return ans.length > 0;
+      return !!ans;
+    }).length;
 
     container.innerHTML = `
       <div class="img-label-player">
@@ -99,22 +119,59 @@ const ImageLabelActivity = {
           }).join('')}
 
           ${img.zones.map(z => {
-            const entry = this._bank.find(e => this._answers[z.id] === e.id);
-            const placedLabel = entry?.label;
+            const isBox = (z.type === 'box');
+            let isCorrect = false;
+            let hasAnswers = false;
+            
+            if (isBox) {
+              const expectedSorted = [...(z.labels || [])].sort();
+              const ans = this._answers[z.id] || [];
+              hasAnswers = ans.length > 0;
+              const placedSorted = ans.map(id => this._bank.find(b => b.id === id)?.label).filter(Boolean).sort();
+              isCorrect = (expectedSorted.length === placedSorted.length) &&
+                expectedSorted.every((val, index) => val === placedSorted[index]);
+            } else {
+              const entry = this._bank.find(e => this._answers[z.id] === e.id);
+              const placedLabel = entry?.label;
+              isCorrect = placedLabel === z.label;
+              hasAnswers = !!placedLabel;
+            }
+
             const cls = this._submitted
-              ? (placedLabel === z.label ? 'correct' : 'incorrect')
-              : (placedLabel ? 'filled' : (this._sel ? 'drop-target' : ''));
+              ? (isCorrect ? 'correct' : 'incorrect')
+              : (hasAnswers ? 'filled' : (this._sel ? 'drop-target' : ''));
             
             const isExt = (z.type === 'arrow' || z.type === 'circle');
             const lx = isExt ? (z.labelX ?? z.x) : z.x;
             const ly = isExt ? (z.labelY ?? z.y) : z.y;
 
+            if (isBox) {
+              const ans = this._answers[z.id] || [];
+              const placedChips = ans.map(id => this._bank.find(e => e.id === id)).filter(Boolean);
+              return `
+                <div class="img-label-zone zone-type-box ${cls}" data-zone-id="${z.id}"
+                  style="left:${lx}%;top:${ly}%">
+                  ${placedChips.length > 0
+                    ? placedChips.map(chip => `
+                        <span class="box-mini-chip" data-entry-id="${chip.id}">
+                          ${App.esc(chip.label)}
+                          ${!this._submitted ? `<span class="box-mini-chip-remove" data-entry-id="${chip.id}">&times;</span>` : ''}
+                        </span>
+                      `).join('')
+                    : '<span class="zone-empty-ph">[ Caja Vacia ]</span>'}
+                  ${this._submitted && !isCorrect
+                    ? `<div class="zone-answer-key">✓ Requeridos: ${App.esc((z.labels || []).join(', '))}</div>` : ''}
+                </div>`;
+            }
+
+            const entry = this._bank.find(e => this._answers[z.id] === e.id);
+            const placedLabel = entry?.label;
             return `
               <div class="img-label-zone ${cls}" data-zone-id="${z.id}"
                 style="left:${lx}%;top:${ly}%">
                 ${placedLabel
                   ? `<span class="zone-word-text">${App.esc(placedLabel)}</span>
-                     ${this._submitted && placedLabel !== z.label
+                     ${this._submitted && !isCorrect
                        ? `<div class="zone-answer-key">✓ ${App.esc(z.label)}</div>` : ''}`
                   : '<span class="zone-empty-ph">_ _ _</span>'}
               </div>`;
@@ -177,14 +234,48 @@ const ImageLabelActivity = {
         if (this._submitted) return;
         e.stopPropagation();
         const zid = zone.dataset.zoneId;
-        const existingId = this._answers[zid];
-        if (existingId) {
-          // Return word to bank
-          delete this._answers[zid];
-          this._sel = null;
-          this.render();
-        } else if (this._sel) {
-          this._answers[zid] = this._sel;
+        const isBox = zone.classList.contains('zone-type-box');
+
+        if (isBox) {
+          if (this._sel) {
+            if (!this._answers[zid]) {
+              this._answers[zid] = [];
+            }
+            if (!this._answers[zid].includes(this._sel)) {
+              this._answers[zid].push(this._sel);
+              this._sel = null;
+              this.render();
+            }
+          }
+        } else {
+          const existingId = this._answers[zid];
+          if (existingId) {
+            // Return word to bank
+            delete this._answers[zid];
+            this._sel = null;
+            this.render();
+          } else if (this._sel) {
+            this._answers[zid] = this._sel;
+            this._sel = null;
+            this.render();
+          }
+        }
+      });
+    });
+
+    // Remove mini-chip from box zone
+    document.querySelectorAll('.box-mini-chip-remove').forEach(btn => {
+      btn.addEventListener('click', e => {
+        if (this._submitted) return;
+        e.stopPropagation();
+        const chipId = btn.dataset.entryId;
+        const zoneEl = btn.closest('.img-label-zone');
+        const zid = zoneEl.dataset.zoneId;
+        if (this._answers[zid]) {
+          this._answers[zid] = this._answers[zid].filter(id => id !== chipId);
+          if (this._answers[zid].length === 0) {
+            delete this._answers[zid];
+          }
           this._sel = null;
           this.render();
         }
@@ -274,11 +365,24 @@ const ImageLabelActivity = {
       const r = z.getBoundingClientRect();
       if (!dropped && cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
         const zid = z.dataset.zoneId;
-        if (!this._answers[zid]) {
-          this._answers[zid] = entryId;
-          this._sel = null;
-          dropped = true;
-          App.playSound('pop');
+        const isBox = z.classList.contains('zone-type-box');
+        if (isBox) {
+          if (!this._answers[zid]) {
+            this._answers[zid] = [];
+          }
+          if (!this._answers[zid].includes(entryId)) {
+            this._answers[zid].push(entryId);
+            this._sel = null;
+            dropped = true;
+            App.playSound('pop');
+          }
+        } else {
+          if (!this._answers[zid]) {
+            this._answers[zid] = entryId;
+            this._sel = null;
+            dropped = true;
+            App.playSound('pop');
+          }
         }
       }
     });
@@ -288,15 +392,29 @@ const ImageLabelActivity = {
   // ── Submit ───────────────────────────────────
   _submit() {
     const allZones = this.activity.data.images.flatMap(img => img.zones);
-    const unplaced = allZones.filter(z => !this._answers[z.id]);
+    const unplaced = allZones.filter(z => {
+      const ans = this._answers[z.id];
+      if (z.type === 'box') {
+        return !ans || ans.length === 0;
+      }
+      return !ans;
+    });
     if (unplaced.length > 0) {
       showToast(`Faltan ${unplaced.length} zona(s) por rellenar`, 'error');
       return;
     }
     this._submitted = true;
     const correct = allZones.filter(z => {
-      const e = this._bank.find(b => b.id === this._answers[z.id]);
-      return e?.label === z.label;
+      if (z.type === 'box') {
+        const expectedSorted = [...(z.labels || [])].sort();
+        const ans = this._answers[z.id] || [];
+        const placedSorted = ans.map(id => this._bank.find(b => b.id === id)?.label).filter(Boolean).sort();
+        return (expectedSorted.length === placedSorted.length) &&
+          expectedSorted.every((val, index) => val === placedSorted[index]);
+      } else {
+        const e = this._bank.find(b => b.id === this._answers[z.id]);
+        return e?.label === z.label;
+      }
     }).length;
     
     if (correct === allZones.length) App.playSound('win');

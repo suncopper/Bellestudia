@@ -577,3 +577,46 @@
   .img-label-zone { font-size: .68rem; padding: 4px 10px; min-width: 60px; }
   .word-chip { font-size: .8rem; padding: .4rem .75rem; }
 }
+
+/* Box/Container zone styling */
+.img-label-zone.zone-type-box {
+  min-width: 140px;
+  min-height: 54px;
+  max-width: 280px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  white-space: normal;
+  overflow: visible;
+  height: auto;
+}
+
+.box-mini-chip {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+
+.box-mini-chip-remove {
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.15s;
+}
+
+.box-mini-chip-remove:hover {
+  color: #ff8888;
+}
+

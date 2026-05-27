@@ -394,3 +394,12 @@
   padding: .25rem .75rem;
   font-size: .78rem; color: var(--text-secondary);
 }
+
+/* Box/Container Pin styling in creator */
+.creator-zone-pin.creator-zone-pin-box {
+  background: var(--secondary) !important;
+  border-color: var(--primary-light) !important;
+  border-radius: 8px !important;
+  padding: 4px 10px !important;
+}
+

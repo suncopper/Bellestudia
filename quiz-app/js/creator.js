@@ -149,9 +149,12 @@ const Creator = {
   _footer() {
     return `
       <div class="creator-footer">
-        <div class="creator-footer-inner">
+        <div class="creator-footer-inner" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
           <button class="btn btn-ghost" id="btn-creator-cancel">Cancelar</button>
-          <button class="btn btn-primary" id="btn-creator-save">💾 Guardar</button>
+          <div style="display:flex; gap:var(--sp-sm);">
+            <button class="btn btn-secondary" id="btn-creator-preview">👁️ Vista Previa</button>
+            <button class="btn btn-primary" id="btn-creator-save">💾 Guardar</button>
+          </div>
         </div>
       </div>`;
   },
@@ -856,6 +859,7 @@ const Creator = {
   _attachEvents(type) {
     document.getElementById('btn-add-item')?.addEventListener('click', () => this._addItem());
     document.getElementById('btn-creator-save')?.addEventListener('click', () => this._save());
+    document.getElementById('btn-creator-preview')?.addEventListener('click', () => this._preview());
     document.getElementById('btn-creator-cancel')?.addEventListener('click', () => App.goHome());
 
     if (type === 'dragdrop') {
@@ -872,8 +876,80 @@ const Creator = {
   },
 
   // ────────────────────────────────────────────
-  // Save / Collect
+  // Save / Collect / Preview
   // ────────────────────────────────────────────
+  async _preview() {
+    const title   = document.getElementById('act-title')?.value?.trim();
+    if (!title) { showToast('El título es obligatorio', 'error'); return; }
+
+    let data;
+    try { data = this._collect(); }
+    catch (e) { showToast(e.message, 'error'); return; }
+
+    const activity = {
+      id:        'preview',
+      type:      this.type,
+      title,
+      subject:   document.getElementById('act-subject')?.value?.trim() || '',
+      topic:     document.getElementById('act-topic')?.value?.trim() || '',
+      createdAt: Date.now(),
+      data,
+    };
+
+    const playerContent = document.getElementById('player-content');
+    if (!playerContent) return;
+
+    const originalParent = playerContent.parentNode;
+
+    let overlay = document.getElementById('creator-preview-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'creator-preview-overlay';
+      overlay.style.cssText = 'position:fixed; inset:0; background:rgba(10,12,16,0.96); z-index:10000; overflow-y:auto; padding:2rem 1.5rem; display:none; backdrop-filter:blur(10px);';
+      overlay.innerHTML = `
+        <div class="preview-modal-container" style="max-width:1050px; margin:0 auto; background:var(--bg-dark); border:1px solid var(--border); border-radius:var(--r-xl); padding:2rem; box-shadow:var(--sh-lg); position:relative; min-height:80vh;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; border-bottom:1px solid var(--glass-border); padding-bottom:1rem; flex-wrap:wrap; gap: 1rem;">
+            <div style="text-align:left;">
+              <h2 style="font-family:var(--font-display); color:#fff; font-size:1.6rem; margin:0; display:flex; align-items:center; gap:0.5rem;">👁️ Vista Previa</h2>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin:0.25rem 0 0 0;">Prueba tu actividad tal como la verán los usuarios. Revisa que no haya sobreposiciones.</p>
+            </div>
+            <button id="creator-preview-close" class="btn btn-secondary" style="font-weight:600; padding:0.6rem 1.2rem; border-radius:100px; cursor:pointer;">Cerrar Vista Previa ✕</button>
+          </div>
+          <div id="preview-player-placeholder"></div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('#creator-preview-close').addEventListener('click', () => {
+        if (MemoryActivity.timerInterval) { clearInterval(MemoryActivity.timerInterval); MemoryActivity.timerInterval = null; }
+        const pc = document.getElementById('player-content');
+        const orig = document.getElementById('preview-player-placeholder')._originalParent;
+        if (pc && orig) {
+          orig.appendChild(pc);
+        }
+        overlay.style.display = 'none';
+      });
+    }
+
+    document.getElementById('preview-player-placeholder')._originalParent = originalParent;
+    const placeholder = overlay.querySelector('#preview-player-placeholder');
+    placeholder.appendChild(playerContent);
+
+    overlay.style.display = 'block';
+
+    const engines = {
+      quiz:       QuizActivity,
+      truefalse:  TrueFalseActivity,
+      dragdrop:   DragDropActivity,
+      matching:   MatchingActivity,
+      memory:     MemoryActivity,
+      imagelabel: ImageLabelActivity,
+      pointclick: PointClickActivity,
+    };
+    const engine = engines[activity.type];
+    if (engine) engine.start(activity);
+  },
+
   async _save() {
     const title   = document.getElementById('act-title')?.value?.trim();
     const subject = document.getElementById('act-subject')?.value?.trim() || '';

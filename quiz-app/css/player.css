@@ -620,3 +620,26 @@
   color: #ff8888;
 }
 
+/* Overrides for individual evaluation in Box zones */
+.img-label-zone.zone-type-box.correct {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: var(--success) !important;
+}
+
+.img-label-zone.zone-type-box.incorrect {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: var(--error) !important;
+}
+
+.box-mini-chip.correct-chip {
+  background: rgba(16, 185, 129, 0.35) !important;
+  border-color: var(--success) !important;
+  color: #a7f3d0 !important;
+}
+
+.box-mini-chip.incorrect-chip {
+  background: rgba(239, 68, 68, 0.35) !important;
+  border-color: var(--error) !important;
+  color: #fca5a5 !important;
+}
+

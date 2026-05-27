@@ -122,14 +122,27 @@ const ImageLabelActivity = {
             const isBox = (z.type === 'box');
             let isCorrect = false;
             let hasAnswers = false;
+            let remainingExpected = [];
+            let chipStates = [];
             
             if (isBox) {
-              const expectedSorted = [...(z.labels || [])].sort();
+              const expected = z.labels || [];
+              remainingExpected = [...expected];
               const ans = this._answers[z.id] || [];
               hasAnswers = ans.length > 0;
-              const placedSorted = ans.map(id => this._bank.find(b => b.id === id)?.label).filter(Boolean).sort();
-              isCorrect = (expectedSorted.length === placedSorted.length) &&
-                expectedSorted.every((val, index) => val === placedSorted[index]);
+              const placedChips = ans.map(id => this._bank.find(e => e.id === id)).filter(Boolean);
+              
+              chipStates = placedChips.map(chip => {
+                const matchIdx = remainingExpected.indexOf(chip.label);
+                if (matchIdx !== -1) {
+                  remainingExpected.splice(matchIdx, 1);
+                  return { chip, isCorrectChip: true };
+                } else {
+                  return { chip, isCorrectChip: false };
+                }
+              });
+              
+              isCorrect = (remainingExpected.length === 0) && chipStates.every(cs => cs.isCorrectChip);
             } else {
               const entry = this._bank.find(e => this._answers[z.id] === e.id);
               const placedLabel = entry?.label;
@@ -146,21 +159,22 @@ const ImageLabelActivity = {
             const ly = isExt ? (z.labelY ?? z.y) : z.y;
 
             if (isBox) {
-              const ans = this._answers[z.id] || [];
-              const placedChips = ans.map(id => this._bank.find(e => e.id === id)).filter(Boolean);
               return `
                 <div class="img-label-zone zone-type-box ${cls}" data-zone-id="${z.id}"
                   style="left:${lx}%;top:${ly}%">
-                  ${placedChips.length > 0
-                    ? placedChips.map(chip => `
-                        <span class="box-mini-chip" data-entry-id="${chip.id}">
-                          ${App.esc(chip.label)}
-                          ${!this._submitted ? `<span class="box-mini-chip-remove" data-entry-id="${chip.id}">&times;</span>` : ''}
-                        </span>
-                      `).join('')
+                  ${chipStates.length > 0
+                    ? chipStates.map(({ chip, isCorrectChip }) => {
+                        const chipCls = this._submitted ? (isCorrectChip ? 'correct-chip' : 'incorrect-chip') : '';
+                        return `
+                          <span class="box-mini-chip ${chipCls}" data-entry-id="${chip.id}">
+                            ${App.esc(chip.label)}
+                            ${!this._submitted ? `<span class="box-mini-chip-remove" data-entry-id="${chip.id}">&times;</span>` : ''}
+                          </span>
+                        `;
+                      }).join('')
                     : '<span class="zone-empty-ph">[ Caja Vacia ]</span>'}
-                  ${this._submitted && !isCorrect
-                    ? `<div class="zone-answer-key">✓ Requeridos: ${App.esc((z.labels || []).join(', '))}</div>` : ''}
+                  ${this._submitted && remainingExpected.length > 0
+                    ? `<div class="zone-answer-key">✓ Faltan: ${App.esc(remainingExpected.join(', '))}</div>` : ''}
                 </div>`;
             }
 
@@ -196,7 +210,10 @@ const ImageLabelActivity = {
 
         <div class="img-label-actions">
           <button class="btn btn-ghost" id="btn-lbl-reset">🔄 Reiniciar</button>
-          <button class="btn btn-primary" id="btn-lbl-check">✓ Verificar respuestas</button>
+          ${this._submitted
+            ? `<button class="btn btn-primary" id="btn-lbl-view-score">Ver Puntuación →</button>`
+            : `<button class="btn btn-primary" id="btn-lbl-check">✓ Verificar respuestas</button>`
+          }
         </div>
       </div>`;
 
@@ -295,6 +312,9 @@ const ImageLabelActivity = {
       this.render();
     });
     document.getElementById('btn-lbl-check')?.addEventListener('click', () => this._submit());
+    document.getElementById('btn-lbl-view-score')?.addEventListener('click', () => {
+      this._renderScore(this._finalCorrect, this._finalTotal);
+    });
   },
 
   _updateSelectionUI() {
@@ -404,24 +424,43 @@ const ImageLabelActivity = {
       return;
     }
     this._submitted = true;
-    const correct = allZones.filter(z => {
+
+    // Calculate score individually (Request 2)
+    let totalPoints = 0;
+    let correctPoints = 0;
+
+    allZones.forEach(z => {
       if (z.type === 'box') {
-        const expectedSorted = [...(z.labels || [])].sort();
+        const expected = z.labels || [];
+        totalPoints += expected.length;
+        
         const ans = this._answers[z.id] || [];
-        const placedSorted = ans.map(id => this._bank.find(b => b.id === id)?.label).filter(Boolean).sort();
-        return (expectedSorted.length === placedSorted.length) &&
-          expectedSorted.every((val, index) => val === placedSorted[index]);
+        const placedLabels = ans.map(id => this._bank.find(b => b.id === id)?.label).filter(Boolean);
+        
+        let remainingExpected = [...expected];
+        placedLabels.forEach(label => {
+          const matchIdx = remainingExpected.indexOf(label);
+          if (matchIdx !== -1) {
+            correctPoints++;
+            remainingExpected.splice(matchIdx, 1);
+          }
+        });
       } else {
-        const e = this._bank.find(b => b.id === this._answers[z.id]);
-        return e?.label === z.label;
+        totalPoints += 1;
+        const entry = this._bank.find(b => b.id === this._answers[z.id]);
+        if (entry && entry.label === z.label) {
+          correctPoints++;
+        }
       }
-    }).length;
-    
-    if (correct === allZones.length) App.playSound('win');
+    });
+
+    if (correctPoints === totalPoints) App.playSound('win');
     else App.playSound('pop');
-    
+
+    this._finalCorrect = correctPoints;
+    this._finalTotal = totalPoints;
+
     this.render();
-    setTimeout(() => this._renderScore(correct, allZones.length), 1500);
   },
 
   _renderScore(correct, total) {
@@ -436,10 +475,12 @@ const ImageLabelActivity = {
         <div class="score-message">${msg}</div>
         <div class="score-actions">
           <button class="btn btn-secondary" id="btn-retry-lbl">🔄 Reintentar</button>
+          <button class="btn btn-ghost"     id="btn-review-lbl">👁️ Revisar Respuestas</button>
           <button class="btn btn-primary"   id="btn-home-lbl">🏠 Inicio</button>
         </div>
       </div>`;
     document.getElementById('btn-retry-lbl')?.addEventListener('click', () => this.start(this.activity));
+    document.getElementById('btn-review-lbl')?.addEventListener('click', () => this.render());
     document.getElementById('btn-home-lbl')?.addEventListener('click', () => App.goHome());
   }
 };

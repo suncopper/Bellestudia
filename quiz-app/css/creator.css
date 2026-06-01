@@ -403,3 +403,84 @@
   padding: 4px 10px !important;
 }
 
+/* ═══════════════════════════════════════════════
+   ASOCIACIÓN DE IMÁGENES (IMAGEMATCH) CREATOR
+   ═══════════════════════════════════════════════ */
+.imagematch-pair-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-lg);
+  position: relative;
+  transition: border-color var(--t-base);
+}
+.imagematch-pair-card:hover {
+  border-color: rgba(124,58,237,.3);
+}
+
+.imagematch-fields {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: var(--sp-md);
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .imagematch-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.imagematch-text-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  width: 100%;
+}
+
+/* Botón recortar sobre la imagen o al lado */
+.btn-crop-item-img {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-xs);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-light);
+  background: rgba(124, 58, 237, 0.08);
+  border: 1.5px solid rgba(124, 58, 237, 0.3);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-crop-item-img:hover {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: var(--primary);
+}
+
+.image-preview-crop-wrapper {
+  position: relative;
+}
+.btn-crop-img-overlay {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 24px;
+  height: 24px;
+  background: rgba(138, 43, 226, 0.85);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+.btn-crop-img-overlay:hover {
+  background: var(--primary);
+}
+
+

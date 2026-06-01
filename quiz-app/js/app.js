@@ -184,6 +184,7 @@ const App = {
       matching:   { icon: '🔗', label: 'Conexión de Términos' },
       memory:     { icon: '🃏', label: 'Memoria' },
       imagelabel: { icon: '🖼', label: 'Etiquetado de Imagen' },
+      imagematch: { icon: '🖼️', label: 'Asociación de Imágenes' },
       pointclick: { icon: '🖱️', label: 'Juego Point & Click' },
     };
     return map[type] || { icon: '📝', label: type };
@@ -575,6 +576,7 @@ const App = {
       matching:   MatchingActivity,
       memory:     MemoryActivity,
       imagelabel: ImageLabelActivity,
+      imagematch: ImageMatchActivity,
       pointclick: PointClickActivity,
     };
     const engine = engines[act.type];

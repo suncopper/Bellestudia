@@ -23,6 +23,10 @@
   <!-- Firebase (Compat v10) - Cloud Database para la Comunidad -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- Cropper.js para recorte de imágenes -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 </head>
 <body>
 
@@ -165,6 +169,11 @@
             <div class="type-name">Etiquetado de Imagen</div>
             <div class="type-desc">Arrastra términos a las zonas correctas sobre imágenes reales</div>
           </button>
+          <button class="type-card" data-type="imagematch">
+            <div class="type-icon">🖼️</div>
+            <div class="type-name">Asociación de Imágenes</div>
+            <div class="type-desc">Relaciona cada imagen con su nombre y definición correspondientes</div>
+          </button>
           <button class="type-card" data-type="pointclick">
             <div class="type-icon">🖱️</div>
             <div class="type-name">Aventura Point &amp; Click</div>
@@ -288,6 +297,7 @@
 <script src="js/activities/matching.js"></script>
 <script src="js/activities/memory.js"></script>
 <script src="js/activities/imagelabel.js"></script>
+<script src="js/activities/imagematch.js"></script>
 <script src="js/activities/pointclick.js"></script>
 <script src="js/exporter.js"></script>
 <script src="js/creator.js"></script>

@@ -14,6 +14,7 @@ const Creator = {
     matching:   'Conexión de Términos',
     memory:     'Juego de Memoria',
     imagelabel: 'Etiquetado de Imagen',
+    imagematch: 'Asociación de Imágenes',
     pointclick: 'Aventura Point & Click',
   },
   
@@ -23,9 +24,10 @@ const Creator = {
       <div class="item-image-area">
         <div class="item-image-preview-wrapper" style="${imgSrc ? '' : 'display:none'}">
           ${imgSrc ? `<img src="${imgSrc}" class="item-img-tag">` : ''}
-          <button class="btn-remove-img-overlay" onclick="Creator._removeImg(this)" title="Quitar imagen">✕</button>
+          <button class="btn-crop-img-overlay" type="button" onclick="Creator._cropImg(this)" title="Recortar imagen">✂️</button>
+          <button class="btn-remove-img-overlay" type="button" onclick="Creator._removeImg(this)" title="Quitar imagen">✕</button>
         </div>
-        <button class="btn btn-sm btn-upload-item-img" onclick="Creator._triggerImgUpload(this)">
+        <button class="btn btn-sm btn-upload-item-img" type="button" onclick="Creator._triggerImgUpload(this)">
           ${imgSrc ? '📷 Cambiar imagen' : '📷 Añadir imagen'}
         </button>
       </div>`;
@@ -51,10 +53,14 @@ const Creator = {
       const reader = new FileReader();
       reader.onload = ev => {
         const base64 = ev.target.result;
-        const card = btn.closest('.question-card');
+        const card = btn.closest('.question-card') || btn.closest('.imagematch-pair-card');
         const wrapper = card.querySelector('.item-image-preview-wrapper');
         wrapper.style.display = 'flex';
-        wrapper.innerHTML = `<img src="${base64}" class="item-img-tag"><button class="btn-remove-img-overlay" onclick="Creator._removeImg(this)" title="Quitar imagen">✕</button>`;
+        wrapper.innerHTML = `
+          <img src="${base64}" class="item-img-tag">
+          <button class="btn-crop-img-overlay" type="button" onclick="Creator._cropImg(this)" title="Recortar imagen">✂️</button>
+          <button class="btn-remove-img-overlay" type="button" onclick="Creator._removeImg(this)" title="Quitar imagen">✕</button>
+        `;
         btn.innerHTML = '📷 Cambiar imagen';
       };
       reader.readAsDataURL(file);
@@ -108,6 +114,7 @@ const Creator = {
       matching:   () => this._matchForm(activity, allActivities),
       memory:     () => this._memForm(activity, allActivities),
       imagelabel: () => this._imgLabelForm(activity, allActivities),
+      imagematch: () => this._imagematchForm(activity, allActivities),
       pointclick: () => PointClickCreator.render(activity, allActivities),
     };
     el.innerHTML = (map[type] || (() => '<p>Tipo no soportado</p>'))();
@@ -838,6 +845,9 @@ const Creator = {
     } else if (type === 'memory') {
       div.innerHTML = this._memCard(this._newMemPair(), count);
       list.appendChild(div.firstElementChild);
+    } else if (type === 'imagematch') {
+      div.innerHTML = this._imagematchCard(this._newImgMatchItem(), count);
+      list.appendChild(div.firstElementChild);
     }
 
     list.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -944,6 +954,7 @@ const Creator = {
       matching:   MatchingActivity,
       memory:     MemoryActivity,
       imagelabel: ImageLabelActivity,
+      imagematch: ImageMatchActivity,
       pointclick: PointClickActivity,
     };
     const engine = engines[activity.type];
@@ -992,6 +1003,7 @@ const Creator = {
     if (t === 'matching')   return this._collectMatch();
     if (t === 'memory')     return this._collectMem();
     if (t === 'imagelabel') return this._collectImgLabel();
+    if (t === 'imagematch') return this._collectImageMatch();
     if (t === 'pointclick') return PointClickCreator.collectData();
     throw new Error('Tipo desconocido');
   },
@@ -1084,5 +1096,185 @@ const Creator = {
   _e(s) {
     if (!s && s !== 0) return '';
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  },
+
+  // ── ImageMatch Form ──────────────────────────
+  _imagematchForm(act, all) {
+    const items = act?.data?.items || [this._newImgMatchItem()];
+    return `<div class="creator-form">
+      ${this._titleField(act?.title || '', 'Ej: Partes de la Planta', act?.subject || '', act?.topic || '', all)}
+      <div class="question-card" style="background:var(--bg-surface)">
+        <p style="font-size:.85rem;color:var(--text-muted)">💡 <strong>Asociación de Imágenes:</strong> Sube imágenes, recórtalas a la proporción deseada y escribe su Nombre y Definición. El estudiante deberá arrastrar/colocar el Nombre y la Definición correctos sobre cada imagen.</p>
+      </div>
+      <div class="question-list" id="q-list">
+        ${items.map((it, i) => this._imagematchCard(it, i)).join('')}
+      </div>
+      <button class="add-item-btn" id="btn-add-item" type="button">+ Agregar Ficha de Imagen</button>
+    </div>${this._footer()}`;
+  },
+
+  _newImgMatchItem() {
+    return { id: App.uid(), image: '', name: '', definition: '' };
+  },
+
+  _imagematchCard(item, i) {
+    return `
+      <div class="imagematch-pair-card question-card" data-id="${item.id}">
+        <div class="question-number">${i + 1}</div>
+        <button class="btn-icon question-card-actions" type="button" onclick="Creator._removeCard('${item.id}')">✕</button>
+        <div class="question-card-content">
+          <div class="imagematch-fields">
+            <div>
+              <label class="form-label">Imagen</label>
+              ${this._imgPart(item.image)}
+            </div>
+            <div class="imagematch-text-inputs">
+              <div class="form-group">
+                <label class="form-label">Nombre / Término</label>
+                <input type="text" class="form-input pair-name" placeholder="Ej: Raíz" value="${Creator._e(item.name)}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Definición / Descripción</label>
+                <textarea class="form-textarea pair-desc" rows="2" placeholder="Ej: Fija la planta al suelo y absorbe agua y sales minerales..." style="min-height:74px;">${Creator._e(item.definition)}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  _collectImageMatch() {
+    const cards = [...document.querySelectorAll('#q-list [data-id]')];
+    if (cards.length < 1) throw new Error('Agrega al menos una ficha de imagen');
+    const items = cards.map((c, i) => {
+      const name = c.querySelector('.pair-name')?.value?.trim();
+      const definition = c.querySelector('.pair-desc')?.value?.trim();
+      const image = c.querySelector('.item-img-tag')?.src || null;
+      if (!name) throw new Error(`El nombre de la ficha ${i + 1} está vacío`);
+      if (!definition) throw new Error(`La definición de la ficha ${i + 1} está vacía`);
+      if (!image) throw new Error(`La ficha ${i + 1} debe contener una imagen`);
+      return { id: c.dataset.id || App.uid(), name, definition, image };
+    });
+    return { items };
+  },
+
+  _cropImg(btn) {
+    const card = btn.closest('.question-card') || btn.closest('.imagematch-pair-card') || btn.closest('.item-image-area');
+    const img = card.querySelector('.item-img-tag');
+    if (!img) return;
+    ImageCropper.open(img.src, croppedSrc => {
+      img.src = croppedSrc;
+    });
+  }
+};
+
+/* ═══════════════════════════════════════════════
+   IMAGE CROPPER UTILITY (USANDO CROPPER.JS)
+   ═══════════════════════════════════════════════ */
+const ImageCropper = {
+  cropper: null,
+  activeCallback: null,
+
+  open(base64Src, callback) {
+    this.activeCallback = callback;
+
+    let overlay = document.getElementById('cropper-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'cropper-overlay';
+      overlay.className = 'cropper-overlay';
+      document.body.appendChild(overlay);
+    }
+
+    overlay.innerHTML = `
+      <div class="cropper-modal-container">
+        <div class="cropper-modal-header">
+          <h3>✂️ Recortar Imagen</h3>
+          <button class="btn btn-ghost btn-icon" id="btn-cropper-close" type="button">✕</button>
+        </div>
+        <div class="cropper-modal-body">
+          <img id="cropper-target-img" src="${base64Src}" alt="Imagen a recortar">
+        </div>
+        <div class="cropper-modal-footer">
+          <div class="cropper-presets-container">
+            <span class="cropper-presets-label">Proporción del Recorte:</span>
+            <div class="cropper-presets">
+              <button class="cropper-preset-btn active" type="button" data-ratio="NaN">Libre</button>
+              <button class="cropper-preset-btn" type="button" data-ratio="1">1:1 (Cuadrado)</button>
+              <button class="cropper-preset-btn" type="button" data-ratio="0.8">4:5 (Vertical)</button>
+              <button class="cropper-preset-btn" type="button" data-ratio="1.3333">4:3 (Estándar)</button>
+              <button class="cropper-preset-btn" type="button" data-ratio="1.7777">16:9 (Horizontal)</button>
+            </div>
+          </div>
+          <div class="cropper-modal-actions">
+            <button class="btn btn-ghost" id="btn-cropper-cancel" type="button">Cancelar</button>
+            <button class="btn btn-primary" id="btn-cropper-confirm" type="button">✓ Aplicar Recorte</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    setTimeout(() => overlay.classList.add('active'), 10);
+
+    const targetImg = document.getElementById('cropper-target-img');
+
+    // Inicializar Cropper.js
+    if (typeof Cropper === 'undefined') {
+      showToast('Error: Librería Cropper.js no cargada.', 'error');
+      overlay.remove();
+      return;
+    }
+
+    this.cropper = new Cropper(targetImg, {
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 0.9,
+      restore: false,
+      guides: true,
+      center: true,
+      highlight: false,
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+      toggleDragModeOnDblclick: false
+    });
+
+    // Eventos de botones de presets
+    const presetBtns = overlay.querySelectorAll('.cropper-preset-btn');
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        presetBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const ratio = parseFloat(btn.dataset.ratio);
+        this.cropper.setAspectRatio(isNaN(ratio) ? NaN : ratio);
+      });
+    });
+
+    const close = () => {
+      overlay.classList.remove('active');
+      setTimeout(() => {
+        if (this.cropper) {
+          this.cropper.destroy();
+          this.cropper = null;
+        }
+        overlay.remove();
+      }, 300);
+    };
+
+    overlay.querySelector('#btn-cropper-close').addEventListener('click', close);
+    overlay.querySelector('#btn-cropper-cancel').addEventListener('click', close);
+
+    overlay.querySelector('#btn-cropper-confirm').addEventListener('click', () => {
+      const canvas = this.cropper.getCroppedCanvas({
+        maxWidth: 800,
+        maxHeight: 800,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high'
+      });
+      if (canvas) {
+        const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        if (this.activeCallback) this.activeCallback(croppedBase64);
+      }
+      close();
+    });
   }
 };

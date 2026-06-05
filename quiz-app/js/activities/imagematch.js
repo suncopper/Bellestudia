@@ -7,7 +7,8 @@ const ImageMatchActivity = {
   activity: null,
   _answers: {},       // { itemId: { name: chipId, desc: chipId } }
   _shuffledNames: [], // [{ id, text }]
-  _shuffledDescs: [], // [{ id, text }]
+  _shuffledDescs: [], // [{ id, text }]  – only items that have a definition
+  _shuffledItems: [], // items in random display order
   _sel: null,         // { id, type: 'name'|'desc', text }
   _submitted: false,
   _ghost: null,
@@ -20,13 +21,20 @@ const ImageMatchActivity = {
     if (this._ghost) { this._ghost.remove(); this._ghost = null; }
 
     const items = act.data.items || [];
+
+    // Aleatorizar el orden de las tarjetas
+    this._shuffledItems = this._shuffle([...items]);
+
     items.forEach(it => {
       this._answers[it.id] = { name: null, desc: null };
     });
 
     // Construir bancos de chips
     const names = items.map(it => ({ id: it.id + '_name', text: it.name, itemId: it.id }));
-    const descs = items.map(it => ({ id: it.id + '_desc', text: it.definition, itemId: it.id }));
+    // Solo incluir definiciones de ítems que realmente las tienen
+    const descs = items
+      .filter(it => it.definition && String(it.definition).trim() !== '')
+      .map(it => ({ id: it.id + '_desc', text: it.definition, itemId: it.id }));
 
     this._shuffledNames = this._shuffle([...names]);
     this._shuffledDescs = this._shuffle([...descs]);
@@ -46,7 +54,9 @@ const ImageMatchActivity = {
     const container = document.getElementById('player-content');
     if (!container) return;
 
-    const items = this.activity.data.items || [];
+    // Usar el orden aleatorizado generado en start()
+    const items = this._shuffledItems.length ? this._shuffledItems : (this.activity.data.items || []);
+    const hasAnyDef = this._shuffledDescs.length > 0;
 
     // Encontrar qué chips ya han sido colocados
     const placedNameIds = new Set();
@@ -60,10 +70,11 @@ const ImageMatchActivity = {
     const availNames = this._shuffledNames.filter(n => !placedNameIds.has(n.id));
     const availDescs = this._shuffledDescs.filter(d => !placedDescIds.has(d.id));
 
-    // Renderizar las tarjetas
+    // Renderizar las tarjetas (en orden aleatorizado)
     const cardsHtml = items.map(it => {
       const ans = this._answers[it.id] || { name: null, desc: null };
-      
+      const hasDefinition = it.definition && String(it.definition).trim() !== '';
+
       const placedNameChip = ans.name ? this._shuffledNames.find(n => n.id === ans.name) : null;
       const placedDescChip = ans.desc ? this._shuffledDescs.find(d => d.id === ans.desc) : null;
 
@@ -83,6 +94,16 @@ const ImageMatchActivity = {
         descCls = hasDesc ? 'filled' : (this._sel?.type === 'desc' ? 'selected' : '');
       }
 
+      const descSlotHtml = hasDefinition ? `
+            <div class="imagematch-slot slot-type-desc ${descCls}" data-item-id="${it.id}" data-slot-type="desc">
+              ${placedDescChip 
+                ? `<span>${App.esc(placedDescChip.text)}</span>` 
+                : `<span class="zone-empty-ph">[ Definición ]</span>`}
+              ${this._submitted && placedDescChip && placedDescChip.itemId !== it.id 
+                ? `<div class="imagematch-slot-key">✓ Correcto: ${App.esc(it.definition)}</div>` 
+                : ''}
+            </div>` : '';
+
       return `
         <div class="imagematch-card" data-item-id="${it.id}">
           <div class="imagematch-img-container">
@@ -97,17 +118,28 @@ const ImageMatchActivity = {
                 ? `<div class="imagematch-slot-key">✓ Correcto: ${App.esc(it.name)}</div>` 
                 : ''}
             </div>
-            <div class="imagematch-slot slot-type-desc ${descCls}" data-item-id="${it.id}" data-slot-type="desc">
-              ${placedDescChip 
-                ? `<span>${App.esc(placedDescChip.text)}</span>` 
-                : `<span class="zone-empty-ph">[ Definición ]</span>`}
-              ${this._submitted && placedDescChip && placedDescChip.itemId !== it.id 
-                ? `<div class="imagematch-slot-key">✓ Correcto: ${App.esc(it.definition)}</div>` 
-                : ''}
-            </div>
+            ${descSlotHtml}
           </div>
         </div>`;
     }).join('');
+
+    const descsBank = hasAnyDef ? `
+              <!-- Banco de Definiciones -->
+              <div class="imagematch-bank">
+                <div class="imagematch-bank-title">
+                  <span>📝 Definiciones</span>
+                  ${this._sel?.type === 'desc' ? '<span style="font-size:0.7rem; color:var(--secondary); font-weight:normal;">Toca un espacio [ Definición ]</span>' : ''}
+                </div>
+                <div class="imagematch-bank-chips" id="bank-descs">
+                  ${availDescs.map(d => `
+                    <div class="word-chip chip-type-desc ${this._sel?.id === d.id ? 'selected' : ''}" 
+                         data-chip-id="${d.id}" data-chip-type="desc">${App.esc(d.text)}</div>
+                  `).join('')}
+                  ${!availDescs.length && !this._submitted 
+                    ? '<span style="color:var(--text-muted); font-size:0.8rem;">✓ Definiciones colocadas</span>' 
+                    : ''}
+                </div>
+              </div>` : '';
 
     container.innerHTML = `
       <div class="imagematch-player">
@@ -134,23 +166,7 @@ const ImageMatchActivity = {
                     : ''}
                 </div>
               </div>
-
-              <!-- Banco de Definiciones -->
-              <div class="imagematch-bank">
-                <div class="imagematch-bank-title">
-                  <span>📝 Definiciones</span>
-                  ${this._sel?.type === 'desc' ? '<span style="font-size:0.7rem; color:var(--secondary); font-weight:normal;">Toca un espacio [ Definición ]</span>' : ''}
-                </div>
-                <div class="imagematch-bank-chips" id="bank-descs">
-                  ${availDescs.map(d => `
-                    <div class="word-chip chip-type-desc ${this._sel?.id === d.id ? 'selected' : ''}" 
-                         data-chip-id="${d.id}" data-chip-type="desc">${App.esc(d.text)}</div>
-                  `).join('')}
-                  ${!availDescs.length && !this._submitted 
-                    ? '<span style="color:var(--text-muted); font-size:0.8rem;">✓ Definiciones colocadas</span>' 
-                    : ''}
-                </div>
-              </div>
+              ${descsBank}
             </div>
 
             <div class="img-label-actions imagematch-sidebar-actions">
@@ -305,30 +321,37 @@ const ImageMatchActivity = {
   _submitAnswers() {
     const items = this.activity.data.items || [];
     let unplacedCount = 0;
-    
+
     items.forEach(it => {
       const ans = this._answers[it.id];
-      if (!ans.name || !ans.desc) unplacedCount++;
+      // Solo el nombre es obligatorio; la definición es siempre opcional
+      if (!ans.name) unplacedCount++;
     });
 
     if (unplacedCount > 0) {
-      showToast(`Quedan ${unplacedCount} espacio(s) por rellenar`, 'error');
+      showToast(`Quedan ${unplacedCount} nombre(s) por colocar`, 'error');
       return;
     }
 
     this._submitted = true;
 
-    // Calcular puntaje
-    let totalPoints = items.length * 2; // 2 puntos por tarjeta (Nombre y Definición)
+    // Calcular puntaje: 1 punto por nombre + 1 punto por definición (si existe)
+    let totalPoints = 0;
     let correctPoints = 0;
 
     items.forEach(it => {
+      const hasDefinition = it.definition && String(it.definition).trim() !== '';
       const ans = this._answers[it.id];
       const nameChip = this._shuffledNames.find(n => n.id === ans.name);
       const descChip = this._shuffledDescs.find(d => d.id === ans.desc);
 
+      totalPoints++; // siempre cuenta el nombre
       if (nameChip && nameChip.itemId === it.id) correctPoints++;
-      if (descChip && descChip.itemId === it.id) correctPoints++;
+
+      if (hasDefinition) {
+        totalPoints++; // sólo cuenta la definición si el ítem la tiene
+        if (descChip && descChip.itemId === it.id) correctPoints++;
+      }
     });
 
     this._finalCorrect = correctPoints;

@@ -1104,7 +1104,7 @@ const Creator = {
     return `<div class="creator-form">
       ${this._titleField(act?.title || '', 'Ej: Partes de la Planta', act?.subject || '', act?.topic || '', all)}
       <div class="question-card" style="background:var(--bg-surface)">
-        <p style="font-size:.85rem;color:var(--text-muted)">💡 <strong>Asociación de Imágenes:</strong> Sube imágenes, recórtalas a la proporción deseada y escribe su Nombre y Definición. El estudiante deberá arrastrar/colocar el Nombre y la Definición correctos sobre cada imagen.</p>
+        <p style="font-size:.85rem;color:var(--text-muted)">💡 <strong>Asociación de Imágenes:</strong> Sube imágenes, recórtalas a la proporción deseada y escribe su Nombre y (opcionalmente) una Definición. El estudiante deberá arrastrar/colocar el Nombre correcto sobre cada imagen. La definición es opcional.</p>
       </div>
       <div class="question-list" id="q-list">
         ${items.map((it, i) => this._imagematchCard(it, i)).join('')}
@@ -1134,7 +1134,7 @@ const Creator = {
                 <input type="text" class="form-input pair-name" placeholder="Ej: Raíz" value="${Creator._e(item.name)}">
               </div>
               <div class="form-group">
-                <label class="form-label">Definición / Descripción</label>
+                <label class="form-label">Definición / Descripción <small style="text-transform:none;font-weight:400;color:var(--text-muted)">(opcional)</small></label>
                 <textarea class="form-textarea pair-desc" rows="2" placeholder="Ej: Fija la planta al suelo y absorbe agua y sales minerales..." style="min-height:74px;">${Creator._e(item.definition)}</textarea>
               </div>
             </div>
@@ -1148,10 +1148,9 @@ const Creator = {
     if (cards.length < 1) throw new Error('Agrega al menos una ficha de imagen');
     const items = cards.map((c, i) => {
       const name = c.querySelector('.pair-name')?.value?.trim();
-      const definition = c.querySelector('.pair-desc')?.value?.trim();
+      const definition = c.querySelector('.pair-desc')?.value?.trim() || '';
       const image = c.querySelector('.item-img-tag')?.src || null;
       if (!name) throw new Error(`El nombre de la ficha ${i + 1} está vacío`);
-      if (!definition) throw new Error(`La definición de la ficha ${i + 1} está vacía`);
       if (!image) throw new Error(`La ficha ${i + 1} debe contener una imagen`);
       return { id: c.dataset.id || App.uid(), name, definition, image };
     });

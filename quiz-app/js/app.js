@@ -186,6 +186,7 @@ const App = {
       imagelabel: { icon: '🖼', label: 'Etiquetado de Imagen' },
       imagematch: { icon: '🖼️', label: 'Asociación de Imágenes' },
       pointclick: { icon: '🖱️', label: 'Juego Point & Click' },
+      timeline:   { icon: '⏳', label: 'Línea de Tiempo' },
     };
     return map[type] || { icon: '📝', label: type };
   },
@@ -578,6 +579,7 @@ const App = {
       imagelabel: ImageLabelActivity,
       imagematch: ImageMatchActivity,
       pointclick: PointClickActivity,
+      timeline:   TimelineActivity,
     };
     const engine = engines[act.type];
     if (engine) engine.start(act);
@@ -746,7 +748,7 @@ const AdminPanel = {
       return;
     }
 
-    const typeIcons = { quiz:'🎯', truefalse:'✅', dragdrop:'🧩', matching:'🔗', memory:'🃏', imagelabel:'🖼', pointclick:'🖱️' };
+    const typeIcons = { quiz:'🎯', truefalse:'✅', dragdrop:'🧩', matching:'🔗', memory:'🃏', imagelabel:'🖼', imagematch:'🖼️', pointclick:'🖱️', timeline:'⏳' };
 
     listEl.innerHTML = list.map(a => {
       const icon   = typeIcons[a.type] || '📝';

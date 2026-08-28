@@ -16,6 +16,7 @@ const Creator = {
     imagelabel: 'Etiquetado de Imagen',
     imagematch: 'Asociación de Imágenes',
     pointclick: 'Aventura Point & Click',
+    timeline:   'Línea de Tiempo',
   },
   
   // ── Image Helpers ────────────────────────────
@@ -116,6 +117,7 @@ const Creator = {
       imagelabel: () => this._imgLabelForm(activity, allActivities),
       imagematch: () => this._imagematchForm(activity, allActivities),
       pointclick: () => PointClickCreator.render(activity, allActivities),
+      timeline:   () => this._timelineForm(activity, allActivities),
     };
     el.innerHTML = (map[type] || (() => '<p>Tipo no soportado</p>'))();
     this._attachEvents(type);
@@ -848,6 +850,9 @@ const Creator = {
     } else if (type === 'imagematch') {
       div.innerHTML = this._imagematchCard(this._newImgMatchItem(), count);
       list.appendChild(div.firstElementChild);
+    } else if (type === 'timeline') {
+      div.innerHTML = this._timelineCard(this._newTimelineItem(), count);
+      list.appendChild(div.firstElementChild);
     }
 
     list.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -956,6 +961,7 @@ const Creator = {
       imagelabel: ImageLabelActivity,
       imagematch: ImageMatchActivity,
       pointclick: PointClickActivity,
+      timeline:   TimelineActivity,
     };
     const engine = engines[activity.type];
     if (engine) engine.start(activity);
@@ -1005,6 +1011,7 @@ const Creator = {
     if (t === 'imagelabel') return this._collectImgLabel();
     if (t === 'imagematch') return this._collectImageMatch();
     if (t === 'pointclick') return PointClickCreator.collectData();
+    if (t === 'timeline')   return this._collectTimeline();
     throw new Error('Tipo desconocido');
   },
 
@@ -1155,6 +1162,96 @@ const Creator = {
       return { id: c.dataset.id || App.uid(), name, definition, image };
     });
     return { items };
+  },
+
+  // ── Timeline Form ───────────────────────────
+  _timelineForm(act, all) {
+    const showNames = act?.data?.showNames !== undefined ? !!act.data.showNames : true;
+    const orientation = act?.data?.orientation || 'horizontal';
+    const items = act?.data?.items || [this._newTimelineItem(), this._newTimelineItem()];
+    return `<div class="creator-form">
+      ${this._titleField(act?.title || '', 'Ej: Línea de Tiempo de la Historia Mundial', act?.subject || '', act?.topic || '', all)}
+      
+      <div class="question-card" style="background:var(--bg-surface)">
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:0.75rem;">
+          💡 <strong>Línea de Tiempo:</strong> Agrega los elementos en el <strong>orden cronológico correcto</strong>. Los elementos se desordenarán automáticamente al jugar.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:0.75rem;">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600; font-size:0.9rem;">
+            <input type="checkbox" id="tl-show-names" style="width:18px;height:18px;accent-color:var(--primary);" ${showNames ? 'checked' : ''}>
+            <span>Incluir casillas de Nombres/Títulos encima o a la izquierda de la línea de tiempo</span>
+          </label>
+          <div class="form-group" style="margin-top:0.25rem;">
+            <label class="form-label" style="font-size:0.85rem;">Orientación de la Línea de Tiempo</label>
+            <div style="display:flex; gap:1.5rem; margin-top:0.25rem;">
+              <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer; font-size:0.9rem; font-weight:500;">
+                <input type="radio" name="tl-orientation" value="horizontal" ${orientation === 'horizontal' ? 'checked' : ''} style="accent-color:var(--primary); width:16px; height:16px;">
+                <span>↔️ Horizontal</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer; font-size:0.9rem; font-weight:500;">
+                <input type="radio" name="tl-orientation" value="vertical" ${orientation === 'vertical' ? 'checked' : ''} style="accent-color:var(--primary); width:16px; height:16px;">
+                <span>↕️ Vertical</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-list" id="q-list">
+        ${items.map((it, i) => this._timelineCard(it, i)).join('')}
+      </div>
+      <button class="add-item-btn" id="btn-add-item" type="button">+ Agregar Elemento a la Línea de Tiempo</button>
+    </div>${this._footer()}`;
+  },
+
+  _newTimelineItem() {
+    return { id: App.uid(), name: '', text: '', image: null };
+  },
+
+  _timelineCard(item, i) {
+    return `
+      <div class="question-card timeline-item-card-creator" data-id="${item.id}">
+        <div class="question-number">${i + 1}</div>
+        <button class="btn-icon question-card-actions" type="button" onclick="Creator._removeCard('${item.id}')">✕</button>
+        <div class="question-card-content">
+          <div class="form-group" style="margin-bottom:var(--sp-sm)">
+            <label class="form-label">Nombre / Título del Evento <small style="text-transform:none;font-weight:400;color:var(--text-muted)">(para casilla superior/izquierda si se activa)</small></label>
+            <input type="text" class="form-input tl-name" placeholder="Ej: Invención de la Imprenta" value="${Creator._e(item.name)}">
+          </div>
+          <div class="form-group" style="margin-bottom:var(--sp-sm)">
+            <label class="form-label">Descripción / Texto <small style="text-transform:none;font-weight:400;color:var(--text-muted)">(para casilla inferior/derecha)</small></label>
+            <textarea class="form-textarea tl-text" rows="2" placeholder="Ej: Johannes Gutenberg perfecciona la imprenta de tipos móviles...">${Creator._e(item.text)}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Imagen <small style="text-transform:none;font-weight:400;color:var(--text-muted)">(opcional para casilla inferior/derecha)</small></label>
+            ${this._imgPart(item.image)}
+          </div>
+        </div>
+      </div>`;
+  },
+
+  _collectTimeline() {
+    const showNames = document.getElementById('tl-show-names')?.checked || false;
+    const orientation = document.querySelector('input[name="tl-orientation"]:checked')?.value || 'horizontal';
+    const cards = [...document.querySelectorAll('#q-list [data-id]')];
+    if (cards.length < 2) throw new Error('Agrega al menos 2 elementos para ordenar en la línea de tiempo');
+
+    const items = cards.map((c, i) => {
+      const name  = c.querySelector('.tl-name')?.value?.trim() || '';
+      const text  = c.querySelector('.tl-text')?.value?.trim() || '';
+      const image = c.querySelector('.item-img-tag')?.src || null;
+
+      if (showNames && !name) {
+        throw new Error(`El nombre/título del elemento ${i + 1} está vacío`);
+      }
+      if (!text && !image) {
+        throw new Error(`El elemento ${i + 1} debe contener al menos un texto o una imagen`);
+      }
+
+      return { id: c.dataset.id || App.uid(), name, text, image };
+    });
+
+    return { showNames, orientation, items };
   },
 
   _cropImg(btn) {

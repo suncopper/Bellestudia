@@ -3,799 +3,314 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Ecosistema Bellestudia: Creación y juego interactivo de actividades educativas.">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#8a2be2">
-  <title>Bellestudia | Ecosistema Educativo</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta name="description" content="Bellestudia — Crea y juega actividades educativas interactivas: quizzes, verdadero/falso, drag & drop, conexión de términos y juegos de memoria. Sin servidor ni instalación.">
+  <title>Bellestudia — Actividades Interactivas</title>
+
+  <!-- Fuentes locales (sin internet) -->
+  <link rel="stylesheet" href="css/fonts.css">
+  
   <script>
     (function() {
       const theme = localStorage.getItem('bellestudia_theme') || 'dark';
       if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
     })();
   </script>
-  <style>
-    :root {
-      --bg-dark: #0f1115;
-      --bg-darker: #08090b;
-      --primary: #8a2be2;
-      --primary-hover: #9c4be6;
-      --secondary: #00d2ff;
-      --text-light: #f8fafc; /* Even brighter white */
-      --text-muted: #cbd5e1; /* Much brighter for better contrast on mobile */
-      --glass-bg: rgba(10, 12, 16, 0.75); /* Darker and less transparent to block the bright blobs */
-      --glass-border: rgba(255, 255, 255, 0.15); /* Stronger border to define shape */
-      --font-display: 'Outfit', sans-serif;
-      --font-body: 'Inter', sans-serif;
-    }
 
-    [data-theme="light"] {
-      --bg-dark: #fce7f3;
-      --bg-darker: #fdf2f8;
-      --primary: #db2777;
-      --primary-hover: #be185d;
-      --secondary: #9333ea;
-      --text-light: #4c1d95;
-      --text-muted: #6b21a8;
-      --glass-bg: rgba(255, 255, 255, 0.65);
-      --glass-border: rgba(219, 39, 119, 0.25);
-    }
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/creator.css">
+  <link rel="stylesheet" href="css/player.css">
 
-    [data-theme="light"] h1 {
-      background: linear-gradient(135deg, var(--text-light) 0%, var(--primary) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+  <!-- Firebase (Compat v10) - Cloud Database para la Comunidad -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    [data-theme="light"] .tool-icon,
-    [data-theme="light"] .tool-title,
-    [data-theme="light"] .category-subtitle {
-      color: var(--text-light);
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      background-color: var(--bg-darker);
-      color: var(--text-light);
-      font-family: var(--font-body);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-      position: relative;
-    }
-
-    /* Fondo dinámico vibrante */
-    .bg-blobs {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      z-index: -1;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .blob {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(120px);
-      opacity: 0.6;
-      animation: float 20s infinite ease-in-out alternate;
-    }
-    .blob-1 {
-      width: 400px; height: 400px;
-      background: var(--primary);
-      top: -10%; left: -10%;
-    }
-    .blob-2 {
-      width: 500px; height: 500px;
-      background: var(--secondary);
-      bottom: -20%; right: -10%;
-      animation-delay: -10s;
-    }
-
-    @keyframes float {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(50px, 50px) scale(1.2); }
-    }
-
-    /* Layout principal */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 4rem 2rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      z-index: 1;
-    }
-
-    .hero-tag {
-      display: inline-block;
-      padding: 0.5rem 1.25rem;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 100px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--secondary);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 2rem;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 20px rgba(0, 210, 255, 0.1);
-    }
-
-    h1 {
-      font-family: var(--font-display);
-      font-size: clamp(3rem, 8vw, 5rem);
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 1.5rem;
-      background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -2px;
-    }
-
-    .subtitle {
-      font-size: clamp(1.1rem, 2vw, 1.3rem);
-      color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto 4rem auto;
-      line-height: 1.6;
-    }
-
-    /* Cards interactivos */
-    .cards-wrapper {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-      gap: 2rem;
-      width: 100%;
-      max-width: 900px;
-    }
-
-    .app-card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 24px;
-      padding: 2.5rem;
-      text-decoration: none;
-      color: var(--text-light);
-      text-align: left;
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      position: relative;
-      overflow: hidden;
-      backdrop-filter: blur(16px);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .app-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(to bottom right, rgba(255,255,255,0.1), transparent);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 0;
-    }
-
-    .app-card:hover {
-      transform: translateY(-10px);
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 40px rgba(138, 43, 226, 0.2);
-    }
-
-    .app-card:hover::before {
-      opacity: 1;
-    }
-
-    .app-card > * {
-      position: relative;
-      z-index: 1;
-    }
-
-    .card-icon {
-      font-size: 3rem;
-      margin-bottom: 1.5rem;
-      background: rgba(0, 0, 0, 0.3);
-      width: 80px; height: 80px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 20px;
-      border: 1px solid var(--glass-border);
-    }
-
-    .card-title {
-      font-family: var(--font-display);
-      font-size: 1.8rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-    }
-
-    .card-desc {
-      color: var(--text-muted);
-      line-height: 1.5;
-      margin-bottom: 2rem;
-      flex: 1;
-    }
-
-    .card-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 600;
-      color: #fff;
-      padding: 0.8rem 1.5rem;
-      border-radius: 12px;
-      transition: all 0.3s;
-      width: max-content;
-    }
-
-    .card-btn svg {
-      width: 18px; height: 18px;
-      transition: transform 0.3s;
-    }
-
-    .app-card:hover .card-btn svg {
-      transform: translateX(5px);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-      box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
-      box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
-    }
-
-    /* ── Sección de Recursos ── */
-    .section-label {
-      font-family: var(--font-display);
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: var(--secondary);
-      margin-bottom: 0.6rem;
-    }
-
-    .section-title {
-      font-family: var(--font-display);
-      font-size: clamp(1.6rem, 4vw, 2.2rem);
-      font-weight: 800;
-      color: var(--text-light);
-      margin-bottom: 0.6rem;
-      letter-spacing: -1px;
-    }
-
-    .section-desc {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin: 0 auto 2.5rem auto;
-      max-width: 560px;
-      text-align: center;
-    }
-
-    .resources-section {
-      width: 100%;
-      max-width: 1100px;
-      margin-top: 5rem;
-      text-align: center;
-    }
-
-    .resources-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
-      gap: 1.25rem;
-      width: 100%;
-    }
-
-    .resource-card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 18px;
-      padding: 1.5rem 1.5rem 1.25rem;
-      text-decoration: none;
-      color: var(--text-light);
-      text-align: left;
-      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      position: relative;
-      overflow: hidden;
-      backdrop-filter: blur(16px);
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-    }
-
-    .resource-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(0,210,255,0.07), transparent 60%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .resource-card:hover {
-      transform: translateY(-6px);
-      border-color: rgba(0, 210, 255, 0.35);
-      box-shadow: 0 16px 36px rgba(0,0,0,0.35), 0 0 30px rgba(0,210,255,0.12);
-    }
-
-    .resource-card:hover::before { opacity: 1; }
-
-    .resource-favicon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      object-fit: contain;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid var(--glass-border);
-      padding: 5px;
-      flex-shrink: 0;
-    }
-
-    .resource-name {
-      font-family: var(--font-display);
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--text-light);
-      line-height: 1.2;
-    }
-
-    .resource-desc {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      line-height: 1.45;
-      flex: 1;
-    }
-
-    .resource-visit {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--secondary);
-      margin-top: 0.25rem;
-      transition: gap 0.2s ease;
-    }
-
-    .resource-card:hover .resource-visit { gap: 0.55rem; }
-
-    .category-subtitle {
-      font-family: var(--font-display);
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #fff;
-      text-align: left;
-      margin: 3.5rem 0 1.5rem 0;
-      padding-bottom: 0.6rem;
-      border-bottom: 1px solid var(--glass-border);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .resources-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
-      gap: 1.5rem;
-      width: 100%;
-      margin-bottom: 2rem;
-    }
-
-
-    .divider {
-      width: 100%;
-      max-width: 1100px;
-      height: 1px;
-      background: linear-gradient(to right, transparent, var(--glass-border), transparent);
-      margin-top: 5rem;
-    }
-
-    footer {
-      text-align: center;
-      padding: 2rem;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      border-top: 1px solid var(--glass-border);
-      background: rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(10px);
-    }
-
-    /* ── Responsive Móvil ── */
-    @media (max-width: 768px) {
-      .container {
-        padding: 2rem 1.5rem;
-      }
-      h1 {
-        font-size: clamp(2rem, 8vw, 2.5rem);
-        margin-bottom: 1rem;
-      }
-      .subtitle {
-        font-size: 1rem;
-        margin-bottom: 2.5rem;
-      }
-      .cards-wrapper {
-        gap: 1.5rem;
-      }
-      .app-card {
-        padding: 1.5rem;
-      }
-      .card-icon {
-        width: 60px; height: 60px; font-size: 2.2rem;
-        margin-bottom: 1rem;
-      }
-      .card-title {
-        font-size: 1.5rem; margin-bottom: 0.5rem;
-      }
-      .card-desc {
-        font-size: 0.95rem; margin-bottom: 1.5rem;
-      }
-      .card-btn {
-        width: 100%;
-        justify-content: center;
-      }
-      .bg-blobs {
-        display: none;
-      }
-      .resources-section {
-        margin-top: 3.5rem;
-      }
-      .resources-grid {
-        gap: 1rem;
-      }
-      .resource-card {
-        padding: 1.25rem;
-      }
-    }
-
-      /* Tarjeta Motivacional */
-      .motivational-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 1.5rem 2rem;
-        max-width: 700px;
-        margin: 0 auto 4rem auto;
-        backdrop-filter: blur(10px);
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        position: relative;
-        overflow: hidden;
-      }
-
-      #quote-text {
-        font-size: 1.1rem;
-        font-style: italic;
-        color: var(--text-light);
-        line-height: 1.4;
-      }
-      #quote-author {
-        font-size: 0.85rem;
-        color: var(--secondary);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-
-  </style>
+  <!-- Cropper.js para recorte de imágenes -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 </head>
 <body>
 
-  <!-- Elementos de fondo -->
-  <div class="bg-blobs">
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-  </div>
+<div id="app">
 
-  <button id="theme-toggle" aria-label="Cambiar tema" style="position: absolute; top: 1.5rem; right: 1.5rem; background: var(--glass-bg); border: 1px solid var(--glass-border); width: 45px; height: 45px; border-radius: 50%; cursor: pointer; color: var(--text-light); font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 100; transition: all 0.3s; backdrop-filter: blur(10px);">
-    ☀️
-  </button>
+  <!-- ════════════ HEADER ════════════ -->
+  <header id="app-header">
+    <nav class="nav-container">
+      <div class="nav-logo" id="btn-home" role="button" tabindex="0" aria-label="Ir al inicio">
+        <img src="assets/logo.png" alt="Bellestudia Logo" style="height:32px; border-radius:6px; object-fit:cover;" onerror="this.outerHTML='<span class=\'logo-icon\'>🦝</span>'">
+        <span class="logo-text">Bellestudia</span>
+      </div>
+      <div class="nav-actions">
+        <button class="btn btn-ghost btn-sm nav-action-btn" id="nav-btn-dashboard" title="Tus Actividades" style="font-weight:bold;">🏠 <span class="nav-btn-label">Tus Actividades</span></button>
+        <button class="btn btn-ghost btn-sm nav-action-btn" id="nav-btn-community" title="Explorar la Comunidad Mundial">🌍 <span class="nav-btn-label">Comunidad</span></button>
+        <button class="btn btn-ghost btn-sm nav-action-btn" id="btn-import" title="Importar actividad (Archivo)">📥 <span class="nav-btn-label">Importar</span></button>
+        <button class="btn btn-primary" id="btn-new-activity">+ Nueva Actividad</button>
+        <button class="btn btn-ghost btn-icon" id="btn-menu-app" title="Menú" style="font-size:1.4rem; padding: 0.2rem;">☰</button>
+      </div>
+    </nav>
+  </header>
 
-  <div class="container">
-    <div class="hero-tag">Todo en uno</div>
-    <h1>Ecosistema Bellestudia</h1>
-    <p class="subtitle">Crea actividades con Inteligencia Artificial, descárgalas, juégalas y compártelas con tus estudiantes.</p>
-
-    <!-- Sección Motivacional -->
-    <div class="motivational-card">
-      <p id="quote-text">Cargando inspiración...</p>
-      <p id="quote-author"></p>
+  <!-- ════════════ SIDEBAR ════════════ -->
+  <div id="app-sidebar-overlay" class="sidebar-overlay"></div>
+  <aside id="app-sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <span class="logo-text" style="font-size: 1.2rem;">Menú</span>
+      <button class="btn btn-ghost btn-icon" id="btn-close-sidebar" style="font-size: 1rem;">✖</button>
     </div>
-
-    <div class="cards-wrapper">
-      
-      <!-- Card Bellestudia App -->
-      <a href="quiz-app/index.html" class="app-card">
-        <div class="card-icon">❤️</div>
-        <h2 class="card-title">Bellestudia App</h2>
-        <p class="card-desc">Juega y crea actividades manualmente (quiz, drag&drop, memoria, etiquetas). Todas tus actividades se auto-descargan localmente.</p>
-        <span class="card-btn btn-secondary">
-          Abrir Aplicación 
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-        </span>
-      </a>
-
-      <!-- Card Bellestudia Pro -->
-      <a href="bellastudia-pro/index.html" class="app-card">
-        <div class="card-icon">💖</div>
-        <h2 class="card-title">Bellestudia Pro</h2>
-        <p class="card-desc">El generador mágico impulsado por Gemini AI. Sube tus PDFs y deja que la IA extraiga imágenes y cree la actividad automáticamente.</p>
-        <span class="card-btn btn-primary">
-          Usar Creador AI
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-        </span>
-      </a>
-
+    <div class="sidebar-content">
+      <button class="sidebar-btn" id="btn-theme-sidebar">☀️ Modo Claro</button>
+      <hr class="sidebar-divider">
+      <button class="sidebar-btn" onclick="window.location.href='../index.html'">⬅️ Volver a Bellestudia</button>
     </div>
+  </aside>
 
-    <!-- ── Recursos Recomendados ── -->
-    <div class="resources-section">
+  <!-- ════════════ MAIN ════════════ -->
+  <main id="app-main">
 
-      <p class="section-label">🔖 Recursos recomendados</p>
-      <h2 class="section-title">Herramientas para tu éxito</h2>
-      <p class="section-desc">Seleccionamos las mejores aplicaciones web para potenciar tu aprendizaje. Organizadas por categorías para que encuentres lo que necesitas.</p>
+    <!-- ── DASHBOARD ── -->
+    <section id="view-dashboard" class="view active">
+      <div class="container">
+        <div class="dashboard-hero">
+          <h1 class="hero-title">Tus Actividades</h1>
+          <p class="hero-subtitle">Crea, edita y juega actividades educativas</p>
+        </div>
+        <div class="stats-bar" id="stats-bar"></div>
+        
+        <!-- Barra de búsqueda -->
+        <div class="search-section" style="margin-bottom: var(--sp-lg);">
+          <div class="search-input-wrapper" style="position:relative; width:100%; max-width: 600px; margin: 0 auto;">
+            <span style="position:absolute; left:16px; top:50%; transform:translateY(-50%); opacity:0.6; pointer-events:none;">🔍</span>
+            <input type="text" id="dashboard-search" class="form-input" 
+                   placeholder="Buscar por título, materia o tema..." 
+                   style="padding-left: 45px; width:100%; border-radius: 50px; background: var(--bg-surface); border-color: var(--border); box-shadow: var(--sh-sm);">
+          </div>
+        </div>
 
-      <!-- Categoría 1: Diseño y Documentos -->
-      <h3 class="category-subtitle">🎨 Diseño y Documentos</h3>
-      <div class="resources-grid">
-        <a href="https://www.canva.com/" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://www.canva.com/favicon.ico" alt="Canva">
-          <div class="resource-name">Canva</div>
-          <p class="resource-desc">Diseña presentaciones, infografías y carteles con plantillas profesionales.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
-        <a href="https://slidesgo.com/es/" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://slidesgo.com/favicon.ico" alt="Slidesgo">
-          <div class="resource-name">Slidesgo</div>
-          <p class="resource-desc">Plantillas gratuitas para Google Slides y PowerPoint de alta calidad.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
-        <a href="https://www.ilovepdf.com/es" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://www.ilovepdf.com/favicon.ico" alt="iLovePDF">
-          <div class="resource-name">iLovePDF</div>
-          <p class="resource-desc">Edita, combina, convierte y comprime PDFs fácilmente en tu navegador.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
+        <!-- Subject / Topic filter (shown when activities have subjects) -->
+        <div class="subject-filter-section" id="filter-section" style="display:none"></div>
+
+        <div class="activities-grid" id="activities-grid"></div>
+        <div class="empty-state" id="empty-state" style="display:none">
+          <div class="empty-icon">📚</div>
+          <h2>¡Crea tu primera actividad!</h2>
+          <p>Usa el botón "Nueva Actividad" para comenzar</p>
+          <button class="btn btn-primary btn-lg" id="btn-new-activity-empty">+ Nueva Actividad</button>
+        </div>
       </div>
+    </section>
 
-      <!-- Categoría 2: Investigación y Escritura -->
-      <h3 class="category-subtitle">✍️ Investigación y Escritura</h3>
-      <div class="resources-grid">
-        <a href="https://scholar.google.es/" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://scholar.google.com/favicon.ico" alt="Google Scholar">
-          <div class="resource-name">Google Académico</div>
-          <p class="resource-desc">Busca artículos científicos, tesis y libros de fuentes académicas fiables.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
-        <a href="https://www.scribbr.es/citar/generador/apa/" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://www.scribbr.es/favicon.ico" alt="Scribbr">
-          <div class="resource-name">Scribbr APA</div>
-          <p class="resource-desc">Generador automático de citas y bibliografía en formato APA.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
-        <a href="https://languagetool.org/es" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://languagetool.org/favicon.ico" alt="LanguageTool">
-          <div class="resource-name">LanguageTool</div>
-          <p class="resource-desc">Corrector ortográfico y de estilo avanzado para tus trabajos escritos.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
-        <a href="https://www.deepl.com/translator" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://www.deepl.com/favicon.ico" alt="DeepL">
-          <div class="resource-name">DeepL</div>
-          <p class="resource-desc">Traductor por IA de alta precisión para textos y documentos.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
+    <!-- ── COMMUNITY ── -->
+    <section id="view-community" class="view">
+      <div class="container">
+        <div class="dashboard-hero">
+          <h1 class="hero-title">Comunidad Bellestudia <span style="color: initial; -webkit-text-fill-color: initial; background: none;">🌍</span></h1>
+          <p class="hero-subtitle">Explora, descarga y juega actividades compartidas por otros profesores y estudiantes.</p>
+        </div>
+        
+        <div class="stats-bar">
+          <div class="stat-item" style="border:none; width: 100%;">
+            <div style="display: flex; gap: 1rem; width: 100%; max-width: 600px; margin: 0 auto; position: relative;">
+              <span style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 1.2rem;">🔍</span>
+              <input type="text" id="comm-search" placeholder="Buscar por título, materia o autor..." 
+                     style="padding-left: 45px; width:100%; border-radius: 50px; background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--sh-sm); color: var(--text-main); font-family: var(--font-body); padding-top: 0.75rem; padding-bottom: 0.75rem; font-size: 1rem; outline: none;">
+            </div>
+            <div style="margin-top: 0.5rem;">
+              <span class="stat-value" id="comm-total-stats">-</span>
+              <span class="stat-label">Actividades Recientes.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="subject-filter-section" id="comm-filter-section" style="display:none; margin-bottom: 2rem;"></div>
+
+        <div class="activities-grid" id="community-grid">
+          <!-- Spinner mientras carga -->
+          <p style="color:var(--text-muted); font-size:1.1rem; grid-column:1/-1; text-align:center; padding: 3rem;">
+            Cargando la base centralizada... ⏳
+          </p>
+        </div>
       </div>
+    </section>
 
-      <!-- Categoría 3: IA y Organización -->
-      <h3 class="category-subtitle">🧠 IA y Organización</h3>
-      <div class="resources-grid">
-        <a href="https://notebooklm.google/students?hl=es" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://notebooklm.google/favicon.ico" alt="NotebookLM">
-          <div class="resource-name">NotebookLM</div>
-          <p class="resource-desc">Asistente de estudio de Google. Resume apuntes y genera audios explicativos.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
-        <a href="https://www.wolframalpha.com/" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://www.wolframalpha.com/favicon.ico" alt="WolframAlpha">
-          <div class="resource-name">WolframAlpha</div>
-          <p class="resource-desc">Buscador de respuestas matemáticas, científicas y datos técnicos.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
-        <a href="https://www.notion.so/" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://www.notion.so/images/favicon.ico" alt="Notion">
-          <div class="resource-name">Notion</div>
-          <p class="resource-desc">Espacio de trabajo todo en uno para organizar tus apuntes y tareas.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
-        <a href="https://www.mentimeter.com/es-ES" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://www.mentimeter.com/favicon.ico" alt="Mentimeter">
-          <div class="resource-name">Mentimeter</div>
-          <p class="resource-desc">Crea presentaciones interactivas y encuestas en tiempo real.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
+    <!-- ── TYPE SELECTOR ── -->
+    <section id="view-type-selector" class="view">
+      <div class="container">
+        <div class="view-header">
+          <button class="btn btn-back" id="btn-back-selector">← Volver</button>
+          <h1>Selecciona el Tipo de Actividad</h1>
+        </div>
+        <div class="type-grid">
+          <button class="type-card" data-type="quiz">
+            <div class="type-icon">🎯</div>
+            <div class="type-name">Quiz</div>
+            <div class="type-desc">Preguntas de opción múltiple con puntuación</div>
+          </button>
+          <button class="type-card" data-type="truefalse">
+            <div class="type-icon">✅</div>
+            <div class="type-name">Verdadero / Falso</div>
+            <div class="type-desc">Afirmaciones para clasificar como V o F</div>
+          </button>
+          <button class="type-card" data-type="dragdrop">
+            <div class="type-icon">🧩</div>
+            <div class="type-name">Drag &amp; Drop</div>
+            <div class="type-desc">Arrastra elementos a las categorías correctas</div>
+          </button>
+          <button class="type-card" data-type="matching">
+            <div class="type-icon">🔗</div>
+            <div class="type-name">Conexión de Términos</div>
+            <div class="type-desc">Une conceptos con sus definiciones o pares</div>
+          </button>
+          <button class="type-card" data-type="memory">
+            <div class="type-icon">🃏</div>
+            <div class="type-name">Memoria</div>
+            <div class="type-desc">Voltea cartas y encuentra los pares ocultos</div>
+          </button>
+          <button class="type-card" data-type="imagelabel">
+            <div class="type-icon">🖼</div>
+            <div class="type-name">Etiquetado de Imagen</div>
+            <div class="type-desc">Arrastra términos a las zonas correctas sobre imágenes reales</div>
+          </button>
+          <button class="type-card" data-type="imagematch">
+            <div class="type-icon">🖼️</div>
+            <div class="type-name">Asociación de Imágenes</div>
+            <div class="type-desc">Relaciona cada imagen con su nombre y definición correspondientes</div>
+          </button>
+          <button class="type-card" data-type="pointclick">
+            <div class="type-icon">🖱️</div>
+            <div class="type-name">Aventura Point &amp; Click</div>
+            <div class="type-desc">Aventura interactiva con escenas y zonas clickeables</div>
+          </button>
+          <button class="type-card" data-type="timeline">
+            <div class="type-icon">⏳</div>
+            <div class="type-name">Línea de Tiempo</div>
+            <div class="type-desc">Ordena cronológicamente eventos o conceptos (con o sin nombres arriba)</div>
+          </button>
+        </div>
       </div>
+    </section>
 
-      <!-- Categoría 4: Plataformas Duoc UC -->
-      <h3 class="category-subtitle">🏫 Mi Institución</h3>
-      <div class="resources-grid">
-        <a href="https://campusvirtual.duoc.cl/ultra/stream" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://campusvirtual.duoc.cl/favicon.ico" alt="Duoc Campus">
-          <div class="resource-name">Campus Virtual Duoc</div>
-          <p class="resource-desc">Accede a tus clases, materiales de estudio y evaluaciones de Duoc UC.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
-        <a href="https://bibliotecas.duoc.cl/inicio" target="_blank" rel="noopener noreferrer" class="resource-card">
-          <img class="resource-favicon" src="https://bibliotecas.duoc.cl/favicon.ico" alt="Duoc Biblio">
-          <div class="resource-name">Bibliotecas Duoc UC</div>
-          <p class="resource-desc">Busca libros, guías y recursos digitales en el catálogo institucional.</p>
-          <span class="resource-visit">Visitar <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7-7 7M3 12h18"/></svg></span>
-        </a>
+    <!-- ── CREATOR ── -->
+    <section id="view-creator" class="view">
+      <div class="container">
+        <div class="view-header">
+          <button class="btn btn-back" id="btn-back-creator">← Volver</button>
+          <h1 id="creator-title">Crear Actividad</h1>
+        </div>
+        <div id="creator-content"></div>
       </div>
-    </div>
-  </div>
+    </section>
 
+    <!-- ── PLAYER ── -->
+    <section id="view-player" class="view">
+      <div class="container">
+        <div class="view-header">
+          <button class="btn btn-back" id="btn-back-player">← Volver</button>
+          <h1 id="player-title">Actividad</h1>
+        </div>
+        <div id="player-content"></div>
+      </div>
+    </section>
 
-  <footer>
-    <p>Bellestudia &copy; 2026 — Diseñado con ❤️ para estudiantes y profesores.</p>
-    <button id="pwa-install-btn" style="display:none; margin-top:1rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:white; padding:0.6rem 1.2rem; border-radius:100px; font-size:0.85rem; cursor:pointer; transition:all 0.3s;">
-      📲 Instalar Bellestudia como App
-    </button>
+  </main>
+
+  <!-- ════════════ FOOTER ════════════ -->
+  <footer class="app-footer">
+    <span id="admin-trigger" style="cursor:default; user-select:none;">💾¡Mapache siempre estará orgullosa de tí!</span>
   </footer>
 
-  <script>
-    const quotes = [
-      { text: "El éxito es la suma de pequeños esfuerzos repetidos día tras día.", author: "Robert Collier" },
-      { text: "No dejes que lo que no puedes hacer interfiera con lo que puedes hacer.", author: "John Wooden" },
-      { text: "La educación es el arma más poderosa que puedes usar para cambiar el mundo.", author: "Nelson Mandela" },
-      { text: "Cree en ti mismo y en todo lo que eres.", author: "Christian D. Larson" },
-      { text: "Tus talentos y habilidades mejorarán con el tiempo, pero para eso has de empezar.", author: "Martin Luther King" },
-      { text: "La mejor forma de predecir el futuro es creándolo.", author: "Peter Drucker" },
-      { text: "El aprendizaje es un tesoro que seguirá a su dueño a todas partes.", author: "Proverbio Chino" },
-      { text: "No hay ascensor al éxito, tienes que tomar las escaleras.", author: "Zig Ziglar" },
-      { text: "Lo que hoy parece un sacrificio, mañana será tu mayor orgullo.", author: "Anónimo" },
-      { text: "La disciplina es el puente entre tus metas y tus logros.", author: "Jim Rohn" },
-      { text: "Si te cansas, aprende a descansar, no a rendirte.", author: "Banksy" },
-      { text: "El genio se hace con un 1% de talento y un 99% de trabajo.", author: "Thomas Edison" },
-      { text: "Tu futuro depende de lo que hagas hoy, no mañana.", author: "Mahatma Gandhi" },
-      { text: "Cada error es una oportunidad para empezar de nuevo con más inteligencia.", author: "Henry Ford" },
-      { text: "La persistencia puede cambiar el fracaso en un logro extraordinario.", author: "Matt Biondi" },
-      { text: "El aprendizaje nunca agota la mente.", author: "Leonardo da Vinci" },
-      { text: "La motivación es lo que te pone en marcha. El hábito es lo que te mantiene.", author: "Jim Ryun" },
-      { text: "No cuentes los días, haz que los días cuenten.", author: "Muhammad Ali" },
-      { text: "Nada en la vida debe ser temido, solo comprendido. Ahora es el momento de comprender más.", author: "Marie Curie" },
-      { text: "He aprendido que la gente olvidará lo que dijiste y lo que hiciste, pero nunca olvidará cómo la hiciste sentir.", author: "Maya Angelou" },
-      { text: "Un niño, un profesor, un libro y una pluma pueden cambiar el mundo.", author: "Malala Yousafzai" },
-      { text: "El futuro pertenece a quienes creen en la belleza de sus sueños.", author: "Eleanor Roosevelt" },
-      { text: "Lo que buscamos está en nosotros mismos.", author: "Helen Keller" },
-      { text: "No hay barrera, cerradura ni cerrojo que puedas imponer a la libertad de mi mente.", author: "Virginia Woolf" },
-      { text: "Lo más difícil es la decisión de actuar, el resto es solo tenacidad.", author: "Amelia Earhart" },
-      { text: "Lucha por las cosas que te importan, pero hazlo de una forma que anime a otros a unirse a ti.", author: "Ruth Bader Ginsburg" },
-      { text: "Solo se vive una vez, pero si lo haces bien, una vez es suficiente.", author: "Mae West" },
-      { text: "Si no te gusta el camino en el que estás, empieza a pavimentar otro.", author: "Dolly Parton" },
-      { text: "La pregunta no es quién me va a dejar, sino quién me va a detener.", author: "Ayn Rand" },
-      { text: "Pies, para qué los quiero si tengo alas para volar.", author: "Frida Kahlo" },
-      { text: "El éxito no es definitivo, el fracaso no es fatal: lo que cuenta es el valor para continuar.", author: "Winston Churchill" },
-      { text: "La inteligencia sin ambición es un pájaro sin alas.", author: "Salvador Dalí" },
-      { text: "La vida es 10% lo que nos pasa y 90% cómo reaccionamos ante ello.", author: "Charles R. Swindoll" },
-      { text: "Siempre parece imposible hasta que se hace.", author: "Nelson Mandela" },
-      { text: "No busques los errores, busca un remedio.", author: "Henry Ford" },
-      { text: "La confianza en uno mismo es el primer secreto del éxito.", author: "Ralph Waldo Emerson" },
-      { text: "Aprende como si fueras a vivir siempre, vive como si fueras a morir mañana.", author: "Mahatma Gandhi" },
-      { text: "El éxito es caminar de fracaso en fracaso sin perder el entusiasmo.", author: "Winston Churchill" },
-      { text: "La vida comienza donde termina tu zona de confort.", author: "Neale Donald Walsch" },
-      { text: "No esperes. El tiempo nunca será el adecuado.", author: "Napoleon Hill" },
-      { text: "Acepta los retos para poder sentir la euforia de la victoria.", author: "George S. Patton" },
-      { text: "Toda aventura comienza con un sí.", author: "Anónimo" },
-      { text: "Para ser irremplazable, uno debe ser siempre diferente.", author: "Coco Chanel" },
-      { text: "El éxito no es cuánto dinero ganas, sino la diferencia que marcas en la vida de las personas.", author: "Michelle Obama" },
-      { text: "No dejes que nadie te diga que no puedes hacer algo.", author: "Katherine Johnson" },
-      { text: "He fallado una y otra vez en mi vida, por eso he tenido éxito.", author: "Michael Jordan" },
-      { text: "La ciencia no es solo una disciplina de razón, sino también de romance y pasión.", author: "Stephen Hawking" },
-      { text: "Haz una cosa cada día que te asuste.", author: "Eleanor Roosevelt" },
-      { text: "La mejor preparación para el mañana es hacer lo mejor posible hoy.", author: "H. Jackson Brown Jr." },
-      { text: "Si quieres algo que nunca has tenido, tendrás que hacer algo que nunca has hecho.", author: "Anónimo" },
-      { text: "No importa lo lento que vayas, siempre y cuando no te detengas.", author: "Confucio" },
-      { text: "El único límite a nuestra realización del mañana serán nuestras dudas de hoy.", author: "Franklin D. Roosevelt" },
-      { text: "La imaginación es el principio de la creación.", author: "George Bernard Shaw" },
-      { text: "Apunta a la luna. Si fallas, podrías dar a una estrella.", author: "William Clement Stone" },
-      { text: "No busques el momento perfecto, toma el momento y hazlo perfecto.", author: "Anónimo" },
-      { text: "El conocimiento es poder.", author: "Francis Bacon" },
-      { text: "La verdadera sabiduría está en reconocer la propia ignorancia.", author: "Sócrates" },
-      { text: "La mente es como un paracaídas, solo funciona si se abre.", author: "Albert Einstein" },
-      { text: "Donde hay educación no hay distinción de clases.", author: "Confucio" },
-      { text: "La pluma es más poderosa que la espada.", author: "Edward Bulwer-Lytton" }
-    ];
+</div>
 
+<!-- ── TOASTS ── -->
+<div id="toast-container" aria-live="polite"></div>
 
+<!-- ════════════ ADMIN PANEL ════════════ -->
+<div id="admin-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; display:none; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
 
-    function setRandomQuote() {
-      const idx = Math.floor(Math.random() * quotes.length);
-      const q = quotes[idx];
-      document.getElementById('quote-text').textContent = q.text;
-      document.getElementById('quote-author').textContent = "— " + q.author;
-    }
+  <!-- Password Gate -->
+  <div id="admin-gate" style="background:var(--bg-surface,#1a1d24); border:1px solid rgba(138,43,226,0.5); border-radius:20px; padding:2.5rem; width:min(420px,90vw); box-shadow:0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(138,43,226,0.2); text-align:center;">
+    <div style="font-size:3rem; margin-bottom:1rem;">🔐</div>
+    <h2 style="font-family:var(--font-display,'Outfit',sans-serif); color:var(--text-main,#f8fafc); margin-bottom:0.5rem;">Acceso Restringido</h2>
+    <p style="color:var(--text-muted,#94a3b8); font-size:0.9rem; margin-bottom:1.5rem;">Ingresa la contraseña de administración</p>
+    <div style="position:relative; margin-bottom:1rem;">
+      <input type="password" id="admin-password-input"
+        placeholder="Contraseña..."
+        style="width:100%; padding:0.85rem 3rem 0.85rem 1rem; border-radius:12px; border:1px solid var(--border,rgba(255,255,255,0.1)); background:rgba(255,255,255,0.05); color:var(--text-main,#f8fafc); font-size:1rem; font-family:var(--font-body,'Inter',sans-serif); outline:none; transition:border-color 0.2s;"
+      >
+      <button id="admin-toggle-pw" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:1.1rem; opacity:0.6;">👁️</button>
+    </div>
+    <p id="admin-gate-error" style="color:#f87171; font-size:0.85rem; margin-bottom:1rem; min-height:1.2em;"></p>
+    <div style="display:flex; gap:0.75rem; justify-content:center;">
+      <button id="admin-cancel" style="padding:0.75rem 1.5rem; border-radius:10px; border:1px solid var(--border,rgba(255,255,255,0.1)); background:transparent; color:var(--text-muted,#94a3b8); cursor:pointer; font-size:0.95rem;">Cancelar</button>
+      <button id="admin-unlock" style="padding:0.75rem 1.5rem; border-radius:10px; border:none; background:linear-gradient(135deg,#8a2be2,#6d1fc2); color:#fff; cursor:pointer; font-size:0.95rem; font-weight:600; box-shadow:0 4px 15px rgba(138,43,226,0.4);">🔓 Entrar</button>
+    </div>
+  </div>
 
-    window.addEventListener('DOMContentLoaded', () => {
-      setRandomQuote();
-      
-      // Favicon fallback logic
-      document.querySelectorAll('.resource-card').forEach(card => {
-        const img = card.querySelector('.resource-favicon');
-        if (!img) return;
-        const name = card.querySelector('.resource-name').textContent.toLowerCase();
-        let emoji = '🔗';
-        if (name.includes('canva') || name.includes('slidesgo') || name.includes('pdf')) emoji = '🎨';
-        else if (name.includes('google') || name.includes('scribbr') || name.includes('language') || name.includes('deepl')) emoji = '✍️';
-        else if (name.includes('notebook') || name.includes('wolfram') || name.includes('notion') || name.includes('menti')) emoji = '🧠';
-        else if (name.includes('duoc')) emoji = '🏫';
-        
-        img.onerror = function() {
-          this.outerHTML = `<div class="emoji-fallback" style="font-size: 2rem; margin-bottom: 0.5rem; line-height: 1.2;">${emoji}</div>`;
-        };
-      });
+  <!-- Admin Panel (shown after unlock) -->
+  <div id="admin-panel" style="display:none; background:var(--bg-surface,#1a1d24); border:1px solid rgba(138,43,226,0.5); border-radius:20px; padding:0; width:min(760px,95vw); max-height:90vh; overflow:hidden; display:none; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(138,43,226,0.2);">
+    
+    <!-- Panel Header -->
+    <div style="padding:1.5rem 2rem; border-bottom:1px solid var(--border,rgba(255,255,255,0.08)); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span style="font-size:1.5rem;">🛡️</span>
+        <div>
+          <h2 style="font-family:var(--font-display,'Outfit',sans-serif); color:var(--text-main,#f8fafc); font-size:1.2rem; margin:0;">Panel de Administración</h2>
+          <p style="color:var(--text-muted,#94a3b8); font-size:0.8rem; margin:0;">Comunidad Bellestudia</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <button id="admin-refresh" title="Recargar lista" style="padding:0.5rem 0.85rem; border-radius:8px; border:1px solid var(--border,rgba(255,255,255,0.1)); background:transparent; color:var(--text-muted,#94a3b8); cursor:pointer; font-size:0.85rem;">🔄 Actualizar</button>
+        <button id="admin-logout" style="padding:0.5rem 1rem; border-radius:8px; border:1px solid rgba(239,68,68,0.4); background:rgba(239,68,68,0.1); color:#f87171; cursor:pointer; font-size:0.85rem; font-weight:600;">🚪 Salir</button>
+      </div>
+    </div>
 
-      const themeBtn = document.getElementById('theme-toggle');
-      const root = document.documentElement;
-      themeBtn.textContent = root.getAttribute('data-theme') === 'light' ? '🌙' : '☀️';
-      
-      themeBtn.addEventListener('click', () => {
-        const isLight = root.getAttribute('data-theme') === 'light';
-        if (isLight) {
-          root.removeAttribute('data-theme');
-          localStorage.setItem('bellestudia_theme', 'dark');
-          themeBtn.textContent = '☀️';
-        } else {
-          root.setAttribute('data-theme', 'light');
-          localStorage.setItem('bellestudia_theme', 'light');
-          themeBtn.textContent = '🌙';
-        }
-      });
-    });
+    <!-- Search + Stats -->
+    <div style="padding:1rem 2rem; border-bottom:1px solid var(--border,rgba(255,255,255,0.06)); flex-shrink:0; display:flex; gap:1rem; align-items:center;">
+      <div style="position:relative; flex:1;">
+        <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:0.5; pointer-events:none;">🔍</span>
+        <input type="text" id="admin-search" placeholder="Buscar por título, autor, materia..."
+          style="width:100%; padding:0.65rem 1rem 0.65rem 2.5rem; border-radius:50px; border:1px solid var(--border,rgba(255,255,255,0.1)); background:rgba(255,255,255,0.04); color:var(--text-main,#f8fafc); font-size:0.9rem; font-family:var(--font-body,'Inter',sans-serif); outline:none;"
+        >
+      </div>
+      <span id="admin-count" style="color:var(--text-muted,#94a3b8); font-size:0.85rem; white-space:nowrap;">— actividades</span>
+    </div>
 
-    // ── Lógica de PWA (Instalación) ──
-    let deferredPrompt;
-    const installBtn = document.getElementById('pwa-install-btn');
+    <!-- Activity List -->
+    <div id="admin-list" style="overflow-y:auto; flex:1; padding:1rem 1.5rem; display:flex; flex-direction:column; gap:0.6rem;">
+      <p style="text-align:center; color:var(--text-muted,#94a3b8); padding:2rem;">Cargando actividades... ⏳</p>
+    </div>
+  </div>
 
-    // Registrar Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(err => console.log("SW error:", err));
-    }
+</div>
 
-    // Capturar evento de instalación
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.style.display = 'inline-block';
-    });
+<!-- ── MODAL ── -->
+<div id="modal-overlay" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h3 id="modal-title">Confirmar</h3>
+    <div id="modal-message"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modal-cancel">Cancelar</button>
+      <button class="btn btn-danger" id="modal-confirm">Eliminar</button>
+    </div>
+  </div>
+</div>
 
-    installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        installBtn.style.display = 'none';
-      }
-      deferredPrompt = null;
-    });
+<!-- ════════════ SCRIPTS ════════════ -->
+<!-- Load order matters: storage → engines → creator → app -->
+<script src="js/storage.js"></script>
+<script src="js/activities/quiz.js"></script>
+<script src="js/activities/truefalse.js"></script>
+<script src="js/activities/dragdrop.js"></script>
+<script src="js/activities/matching.js"></script>
+<script src="js/activities/memory.js"></script>
+<script src="js/activities/imagelabel.js"></script>
+<script src="js/activities/imagematch.js"></script>
+<script src="js/activities/pointclick.js"></script>
+<script src="js/activities/timeline.js"></script>
+<script src="js/exporter.js"></script>
+<script src="js/creator.js"></script>
+<script src="js/activities/pointclick_creator.js"></script>
+<script src="js/community.js"></script>
+<script src="js/rain.js"></script>
+<script src="js/app.js"></script>
 
-    // Ocultar botón si ya está instalada
-    window.addEventListener('appinstalled', () => {
-      installBtn.style.display = 'none';
-    });
-  </script>
 </body>
 </html>

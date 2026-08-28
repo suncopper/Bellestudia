@@ -1212,7 +1212,12 @@ const Creator = {
     return `
       <div class="question-card timeline-item-card-creator" data-id="${item.id}">
         <div class="question-number">${i + 1}</div>
-        <button class="btn-icon question-card-actions" type="button" onclick="Creator._removeCard('${item.id}')">✕</button>
+        <div class="question-card-actions">
+          <button class="btn btn-sm btn-ghost" type="button" onclick="Creator._moveTimelineCard('${item.id}', -1)" title="Subir posición" style="padding:2px 6px; font-size:0.75rem; border:1px solid var(--border); border-radius:var(--r-sm);">⬆️ Subir</button>
+          <button class="btn btn-sm btn-ghost" type="button" onclick="Creator._moveTimelineCard('${item.id}', 1)" title="Bajar posición" style="padding:2px 6px; font-size:0.75rem; border:1px solid var(--border); border-radius:var(--r-sm);">⬇️ Bajar</button>
+          <button class="btn btn-sm btn-ghost" type="button" onclick="Creator._duplicateTimelineCard('${item.id}')" title="Duplicar este elemento" style="padding:2px 8px; font-size:0.75rem; border:1px solid var(--border); border-radius:var(--r-sm);">📄 Duplicar</button>
+          <button class="btn-icon" type="button" onclick="Creator._removeCard('${item.id}')">✕</button>
+        </div>
         <div class="question-card-content">
           <div class="form-group" style="margin-bottom:var(--sp-sm)">
             <label class="form-label">Nombre / Título del Evento <small style="text-transform:none;font-weight:400;color:var(--text-muted)">(para casilla superior/izquierda si se activa)</small></label>
@@ -1228,6 +1233,50 @@ const Creator = {
           </div>
         </div>
       </div>`;
+  },
+
+  _moveTimelineCard(id, delta) {
+    const list = document.getElementById('q-list');
+    const card = list?.querySelector(`[data-id="${id}"]`);
+    if (!card) return;
+
+    if (delta === -1) {
+      const prev = card.previousElementSibling;
+      if (prev) {
+        list.insertBefore(card, prev);
+        this._renumber();
+      }
+    } else if (delta === 1) {
+      const next = card.nextElementSibling;
+      if (next) {
+        list.insertBefore(next, card);
+        this._renumber();
+      }
+    }
+  },
+
+  _duplicateTimelineCard(id) {
+    const card = document.querySelector(`#q-list [data-id="${id}"]`);
+    if (!card) return;
+
+    const name  = card.querySelector('.tl-name')?.value || '';
+    const text  = card.querySelector('.tl-text')?.value || '';
+    const image = card.querySelector('.item-img-tag')?.src || null;
+
+    const newItem = {
+      id: App.uid(),
+      name,
+      text,
+      image
+    };
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = this._timelineCard(newItem, 0);
+    const newCardEl = tempDiv.firstElementChild;
+
+    card.after(newCardEl);
+    this._renumber();
+    showToast('Elemento duplicado ✅', 'success');
   },
 
   _collectTimeline() {

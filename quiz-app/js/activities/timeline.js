@@ -96,11 +96,11 @@ const TimelineActivity = {
 
                 const topEntryId = this._answers[topKey];
                 const topEntry = topEntryId ? this._nameBank.find(n => n.id === topEntryId) : null;
-                const isTopCorrect = topEntry && topEntry.itemId === item.id;
+                const isTopCorrect = this._isTopSlotCorrect(idx);
 
                 const bottomEntryId = this._answers[bottomKey];
                 const bottomEntry = bottomEntryId ? this._itemBank.find(i => i.id === bottomEntryId) : null;
-                const isBottomCorrect = bottomEntry && bottomEntry.itemId === item.id;
+                const isBottomCorrect = this._isBottomSlotCorrect(idx);
 
                 let topCls = '';
                 if (this._submitted) {
@@ -381,6 +381,50 @@ const TimelineActivity = {
     if (dropped) this.render();
   },
 
+  _isTopSlotCorrect(idx) {
+    const topEntryId = this._answers[`top_${idx}`];
+    if (!topEntryId) return false;
+    const topEntry = this._nameBank.find(n => n.id === topEntryId);
+    if (!topEntry) return false;
+
+    const expectedItem = this.activity.data.items[idx];
+    if (!expectedItem) return false;
+
+    // 1. Direct ID match
+    if (topEntry.itemId === expectedItem.id) return true;
+
+    // 2. Content / Name equality match (allows duplicate events in timeline)
+    const placedName   = (topEntry.name || '').trim().toLowerCase();
+    const expectedName = (expectedItem.name || '').trim().toLowerCase();
+    return (placedName.length > 0 && placedName === expectedName);
+  },
+
+  _isBottomSlotCorrect(idx) {
+    const bottomEntryId = this._answers[`bottom_${idx}`];
+    if (!bottomEntryId) return false;
+    const bottomEntry = this._itemBank.find(i => i.id === bottomEntryId);
+    if (!bottomEntry) return false;
+
+    const expectedItem = this.activity.data.items[idx];
+    if (!expectedItem) return false;
+
+    // 1. Direct ID match
+    if (bottomEntry.itemId === expectedItem.id) return true;
+
+    // 2. Content equality match (text + image + name - allows duplicate events in timeline)
+    const placedText   = (bottomEntry.text || '').trim().toLowerCase();
+    const expectedText = (expectedItem.text || '').trim().toLowerCase();
+
+    const placedName   = (bottomEntry.name || '').trim().toLowerCase();
+    const expectedName = (expectedItem.name || '').trim().toLowerCase();
+
+    const sameImage = (bottomEntry.image === expectedItem.image);
+    const sameText  = (placedText === expectedText);
+    const sameName  = (placedName === expectedName);
+
+    return (sameImage && sameText && sameName);
+  },
+
   // ── Submit & Score ──
   _submit() {
     const items = this.activity.data.items || [];
@@ -399,16 +443,12 @@ const TimelineActivity = {
 
     items.forEach((item, idx) => {
       if (showNames) {
-        const topId = this._answers[`top_${idx}`];
-        const topEntry = this._nameBank.find(n => n.id === topId);
-        if (topEntry && topEntry.itemId === item.id) {
+        if (this._isTopSlotCorrect(idx)) {
           correctCount++;
         }
       }
 
-      const bottomId = this._answers[`bottom_${idx}`];
-      const bottomEntry = this._itemBank.find(i => i.id === bottomId);
-      if (bottomEntry && bottomEntry.itemId === item.id) {
+      if (this._isBottomSlotCorrect(idx)) {
         correctCount++;
       }
     });

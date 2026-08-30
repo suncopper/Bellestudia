@@ -222,7 +222,20 @@ const TimelineActivity = {
       </div>
     `;
 
+    // Preserve scroll position before re-rendering
+    const prevScroll = document.querySelector('.timeline-scroll-container');
+    const savedScrollLeft = prevScroll ? prevScroll.scrollLeft : 0;
+    const savedScrollTop  = prevScroll ? prevScroll.scrollTop  : 0;
+
     container.innerHTML = html;
+
+    // Restore scroll position after new DOM is injected
+    const newScroll = container.querySelector('.timeline-scroll-container');
+    if (newScroll) {
+      newScroll.scrollLeft = savedScrollLeft;
+      newScroll.scrollTop  = savedScrollTop;
+    }
+
     this._bindEvents();
   },
 

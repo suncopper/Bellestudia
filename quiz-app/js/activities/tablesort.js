@@ -24,8 +24,8 @@ const TableSortCreator = {
     
     this._bgImage = d.bgImage || 'assets/table_bg.jpg';
     this._labels = d.labels ? JSON.parse(JSON.stringify(d.labels)) : [
-      { id: App.uid(), text: 'ESTÉRIL', x: 25, y: 12, color: 'blue' },
-      { id: App.uid(), text: 'SUCIO', x: 75, y: 12, color: 'red' }
+      { id: App.uid(), text: 'ETIQUETA 1', x: 25, y: 12, color: '#2563eb' },
+      { id: App.uid(), text: 'ETIQUETA 2', x: 75, y: 12, color: '#dc2626' }
     ];
     
     // Por defecto, 3 zonas preconfiguradas (Izquierda, Centro, Derecha)
@@ -255,6 +255,18 @@ const TableSortCreator = {
     }
   },
 
+  _getLabelHex(lbl) {
+    const colorMap = {
+      blue: '#2563eb',
+      red: '#dc2626',
+      green: '#059669',
+      purple: '#7c3aed',
+      dark: '#0f172a'
+    };
+    if (lbl.color && lbl.color.startsWith('#')) return lbl.color;
+    return colorMap[lbl.color] || '#2563eb';
+  },
+
   _renderLabelsList() {
     if (!this._labels.length) {
       return `<p style="color:var(--text-muted); font-size:0.9rem;">No hay textos fijos agregados.</p>`;
@@ -264,28 +276,21 @@ const TableSortCreator = {
         <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
           <div style="display:flex; align-items:center; gap:0.5rem; flex:1; min-width:200px;">
             <span style="font-weight:bold; color:var(--primary-light);">#${idx + 1}</span>
-            <input type="text" class="form-input" value="${Creator._e(lbl.text)}" placeholder="Ej: ESTÉRIL" 
+            <input type="text" class="form-input" value="${Creator._e(lbl.text)}" placeholder="Ej: ETIQUETA" 
                    oninput="TableSortCreator._updateLabelText('${lbl.id}', this.value)" style="flex:1;">
           </div>
 
-          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-            <label style="font-size:0.85rem; color:var(--text-muted);">Estilo:</label>
-            <select class="form-input" onchange="TableSortCreator._updateLabelColor('${lbl.id}', this.value)" style="padding:0.4rem; font-size:0.85rem;">
-              <option value="blue" ${lbl.color === 'blue' ? 'selected' : ''}>🔵 Azul (Estéril)</option>
-              <option value="red" ${lbl.color === 'red' ? 'selected' : ''}>🔴 Rojo (Sucio)</option>
-              <option value="green" ${lbl.color === 'green' ? 'selected' : ''}>🟢 Verde (Limpio)</option>
-              <option value="purple" ${lbl.color === 'purple' ? 'selected' : ''}>🟣 Morado</option>
-              <option value="dark" ${lbl.color === 'dark' ? 'selected' : ''}>⚪ Neutro</option>
-            </select>
-
-            <div style="display:flex; align-items:center; gap:0.25rem;">
-              <label style="font-size:0.8rem; color:var(--text-muted);">X%:</label>
-              <input type="number" id="lbl-x-${lbl.id}" class="form-input" value="${lbl.x}" min="0" max="100" style="width:55px; padding:0.3rem;"
-                     oninput="TableSortCreator._updateLabelPos('${lbl.id}', 'x', this.value)">
-              <label style="font-size:0.8rem; color:var(--text-muted);">Y%:</label>
-              <input type="number" id="lbl-y-${lbl.id}" class="form-input" value="${lbl.y}" min="0" max="100" style="width:55px; padding:0.3rem;"
-                     oninput="TableSortCreator._updateLabelPos('${lbl.id}', 'y', this.value)">
+          <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Color:</label>
+              <input type="color" class="form-input-color" value="${this._getLabelHex(lbl)}" 
+                     onchange="TableSortCreator._updateLabelColor('${lbl.id}', this.value)" 
+                     style="width:34px; height:34px; padding:2px; border:1px solid var(--border); border-radius:50%; cursor:pointer; background:none;"
+                     title="Seleccionar color (Rueda de color)">
             </div>
+
+            <input type="hidden" id="lbl-x-${lbl.id}" value="${lbl.x}">
+            <input type="hidden" id="lbl-y-${lbl.id}" value="${lbl.y}">
 
             <button type="button" class="btn-icon" onclick="TableSortCreator._removeLabel('${lbl.id}')" title="Eliminar label">✕</button>
           </div>
@@ -309,24 +314,19 @@ const TableSortCreator = {
           <button type="button" class="btn-icon" onclick="TableSortCreator._removeZone('${z.id}')" title="Eliminar zona">✕</button>
         </div>
 
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; background:rgba(255,255,255,0.03); padding:0.75rem; border-radius:8px;">
+        <div style="display:flex; align-items:center; background:rgba(255,255,255,0.03); padding:0.75rem; border-radius:8px;">
           <!-- Toggle de Orden Secuencial -->
-          <div style="display:flex; align-items:center;">
-            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600; font-size:0.9rem; color:var(--primary-light);">
-              <input type="checkbox" style="width:18px; height:18px; accent-color:var(--primary);" 
-                     ${z.ordered ? 'checked' : ''} 
-                     onchange="TableSortCreator._updateZoneOrdered('${z.id}', this.checked)">
-              <span>🔢 Exigir Orden Secuencial</span>
-            </label>
-          </div>
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600; font-size:0.9rem; color:var(--primary-light);">
+            <input type="checkbox" style="width:18px; height:18px; accent-color:var(--primary);" 
+                   ${z.ordered ? 'checked' : ''} 
+                   onchange="TableSortCreator._updateZoneOrdered('${z.id}', this.checked)">
+            <span>🔢 Exigir Orden Secuencial</span>
+          </label>
 
-          <!-- Dimensiones / Posición -->
-          <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; font-size:0.85rem; color:var(--text-muted);">
-            <span>X: <input type="number" id="zone-x-${z.id}" class="form-input" value="${z.x}" min="0" max="100" style="width:50px; padding:0.2rem;" oninput="TableSortCreator._updateZoneDim('${z.id}','x',this.value)">%</span>
-            <span>Y: <input type="number" id="zone-y-${z.id}" class="form-input" value="${z.y}" min="0" max="100" style="width:50px; padding:0.2rem;" oninput="TableSortCreator._updateZoneDim('${z.id}','y',this.value)">%</span>
-            <span>Ancho: <input type="number" id="zone-w-${z.id}" class="form-input" value="${z.width}" min="5" max="100" style="width:50px; padding:0.2rem;" oninput="TableSortCreator._updateZoneDim('${z.id}','width',this.value)">%</span>
-            <span>Alto: <input type="number" id="zone-h-${z.id}" class="form-input" value="${z.height}" min="5" max="100" style="width:50px; padding:0.2rem;" oninput="TableSortCreator._updateZoneDim('${z.id}','height',this.value)">%</span>
-          </div>
+          <input type="hidden" id="zone-x-${z.id}" value="${z.x}">
+          <input type="hidden" id="zone-y-${z.id}" value="${z.y}">
+          <input type="hidden" id="zone-w-${z.id}" value="${z.width}">
+          <input type="hidden" id="zone-h-${z.id}" value="${z.height}">
         </div>
       </div>
     `).join('');
@@ -379,6 +379,7 @@ const TableSortCreator = {
               <div class="item-image-area" style="margin:0;">
                 <div class="item-image-preview-wrapper" style="${it.image ? '' : 'display:none'}">
                   ${it.image ? `<img src="${it.image}" class="item-img-tag" style="max-height:60px; object-fit:contain;">` : ''}
+                  <button class="btn-crop-img-overlay" type="button" onclick="TableSortCreator._cropItemImage('${it.id}', this)" title="Recortar imagen">✂️</button>
                   <button class="btn-remove-img-overlay" type="button" onclick="TableSortCreator._removeItemImage('${it.id}')" title="Quitar imagen">✕</button>
                 </div>
                 <button class="btn btn-sm btn-ghost" type="button" onclick="TableSortCreator._uploadItemImage('${it.id}')" style="font-size:0.8rem; padding:0.3rem 0.6rem;">
@@ -394,6 +395,17 @@ const TableSortCreator = {
     }).join('');
   },
 
+  _cropItemImage(id, btn) {
+    const card = btn.closest('.item-image-area');
+    const img = card?.querySelector('.item-img-tag');
+    if (!img || !img.src) return;
+    ImageCropper.open(img.src, croppedSrc => {
+      img.src = croppedSrc;
+      const it = this._items.find(x => x.id === id);
+      if (it) it.image = croppedSrc;
+    });
+  },
+
   // ── Preview overlay renderer con arrastre y redimensionado visual ───
   _updatePreviewOverlay() {
     const labelsContainer = document.getElementById('ts-labels-overlay-preview');
@@ -401,16 +413,19 @@ const TableSortCreator = {
     if (!labelsContainer || !zonesContainer) return;
 
     // Render Labels Overlay
-    labelsContainer.innerHTML = this._labels.map(lbl => `
-      <div class="ts-label-badge badge-${lbl.color || 'blue'}" 
-           data-label-id="${lbl.id}"
-           style="position:absolute; left:${lbl.x}%; top:${lbl.y}%; transform:translate(-50%, -50%); cursor:move; z-index:10; border:2px solid rgba(255,255,255,0.6);"
-           title="Arrastra para mover este texto">
-        🖐️ ${Creator._e(lbl.text)}
-      </div>
-    `).join('');
+    labelsContainer.innerHTML = this._labels.map(lbl => {
+      const colorHex = this._getLabelHex(lbl);
+      return `
+        <div class="ts-label-badge" 
+             data-label-id="${lbl.id}"
+             style="position:absolute; left:${lbl.x}%; top:${lbl.y}%; transform:translate(-50%, -50%); cursor:move; z-index:10; border:2px solid rgba(255,255,255,0.6); background:${colorHex}; color:#fff;"
+             title="Arrastra para mover este texto">
+          🖐️ ${Creator._e(lbl.text)}
+        </div>
+      `;
+    }).join('');
 
-    // Render Zones Overlay (Baja opacidad para alta inmersión visual)
+    // Render Zones Overlay (Sin visualizar texto de porcentajes)
     zonesContainer.innerHTML = this._zones.map(z => `
       <div data-zone-move-id="${z.id}"
            style="position:absolute; left:${z.x}%; top:${z.y}%; width:${z.width}%; height:${z.height}%; 
@@ -420,9 +435,6 @@ const TableSortCreator = {
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="font-size:0.75rem; font-weight:bold; background:rgba(0,0,0,0.65); color:#fff; padding:2px 6px; border-radius:4px;">
             ${Creator._e(z.name)} ${z.ordered ? '🔢' : ''}
-          </span>
-          <span style="font-size:0.7rem; background:rgba(124,58,237,0.7); color:#fff; padding:1px 5px; border-radius:3px;">
-            ${z.width}% x ${z.height}%
           </span>
         </div>
 
@@ -693,11 +705,16 @@ const TableSortActivity = {
   selected: null, // itemId for tap-to-place on mobile/desktop
   submitted: false,
 
+  shuffledItems: [],
+
   start(activity) {
     this.act = activity;
     this.placed = {};
     this.selected = null;
     this.submitted = false;
+
+    // Aleatorizar los elementos del banco
+    this.shuffledItems = this._shuffle([...(activity?.data?.items || [])]);
 
     // Inicializar contenedores de zonas vacíos
     (activity.data.zones || []).forEach(z => {
@@ -707,10 +724,19 @@ const TableSortActivity = {
     this.render();
   },
 
+  _shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  },
+
   render() {
     const container = document.getElementById('player-content');
     const d = this.act.data;
-    const allItems = d.items || [];
+    const allItems = this.shuffledItems || d.items || [];
     const zones = d.zones || [];
     const labels = d.labels || [];
 
@@ -742,11 +768,14 @@ const TableSortActivity = {
 
           <!-- Etiquetas de Texto Fijas -->
           <div class="ts-labels-overlay">
-            ${labels.map(lbl => `
-              <div class="ts-label-badge badge-${lbl.color || 'blue'}" style="position:absolute; left:${lbl.x}%; top:${lbl.y}%; transform:translate(-50%,-50%);">
-                ${App.esc(lbl.text)}
-              </div>
-            `).join('')}
+            ${labels.map(lbl => {
+              const colorHex = TableSortCreator._getLabelHex ? TableSortCreator._getLabelHex(lbl) : (lbl.color && lbl.color.startsWith('#') ? lbl.color : ({ blue: '#2563eb', red: '#dc2626', green: '#059669', purple: '#7c3aed', dark: '#0f172a' }[lbl.color] || '#2563eb'));
+              return `
+                <div class="ts-label-badge" style="position:absolute; left:${lbl.x}%; top:${lbl.y}%; transform:translate(-50%,-50%); background:${colorHex}; color:#fff;">
+                  ${App.esc(lbl.text)}
+                </div>
+              `;
+            }).join('')}
           </div>
 
           <!-- Zonas de Colocación (Drop targets) -->

@@ -226,11 +226,14 @@ const Community = {
       img.onload = () => {
         let width = img.width;
         let height = img.height;
+        const isPng = base64Str.startsWith('data:image/png');
+
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
-        } else if (base64Str.startsWith('data:image/jpeg') && base64Str.length < 300000) {
-          // Si ya es un jpeg relativamente ligero, lo mantenemos intacto
+        } else if (base64Str.length < 400000) {
+          // Si la imagen ya tiene un tamaño moderado (<400KB), la conservamos en su formato original
+          // para preservar perfectamente la calidad y la transparencia (PNG)
           return resolve(base64Str);
         }
         
@@ -239,7 +242,9 @@ const Community = {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        const compressed = canvas.toDataURL('image/jpeg', quality);
+        
+        // Exportar según formato de origen para conservar transparencia en PNGs
+        const compressed = isPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', quality);
         
         resolve(compressed.length < base64Str.length ? compressed : base64Str);
       };

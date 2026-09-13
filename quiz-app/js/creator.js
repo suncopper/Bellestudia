@@ -965,6 +965,7 @@ const Creator = {
       imagematch: ImageMatchActivity,
       pointclick: PointClickActivity,
       timeline:   TimelineActivity,
+      tablesort:  TableSortActivity,
     };
     const engine = engines[activity.type];
     if (engine) engine.start(activity);
@@ -1420,7 +1421,8 @@ const ImageCropper = {
         imageSmoothingQuality: 'high'
       });
       if (canvas) {
-        const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        const isPng = base64Src && base64Src.startsWith('data:image/png');
+        const croppedBase64 = isPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85);
         if (this.activeCallback) this.activeCallback(croppedBase64);
       }
       close();

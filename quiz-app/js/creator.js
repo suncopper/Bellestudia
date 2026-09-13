@@ -17,6 +17,7 @@ const Creator = {
     imagematch: 'Asociación de Imágenes',
     pointclick: 'Aventura Point & Click',
     timeline:   'Línea de Tiempo',
+    tablesort:  'Clasificación en Mesa',
   },
   
   // ── Image Helpers ────────────────────────────
@@ -118,9 +119,11 @@ const Creator = {
       imagematch: () => this._imagematchForm(activity, allActivities),
       pointclick: () => PointClickCreator.render(activity, allActivities),
       timeline:   () => this._timelineForm(activity, allActivities),
+      tablesort:  () => TableSortCreator.render(activity, allActivities),
     };
     el.innerHTML = (map[type] || (() => '<p>Tipo no soportado</p>'))();
     this._attachEvents(type);
+    if (type === 'tablesort') TableSortCreator._attachEvents();
   },
 
   // ── Common sections ──────────────────────────
@@ -1012,6 +1015,7 @@ const Creator = {
     if (t === 'imagematch') return this._collectImageMatch();
     if (t === 'pointclick') return PointClickCreator.collectData();
     if (t === 'timeline')   return this._collectTimeline();
+    if (t === 'tablesort')  return TableSortCreator.collectData()?.data;
     throw new Error('Tipo desconocido');
   },
 

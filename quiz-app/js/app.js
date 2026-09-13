@@ -187,6 +187,7 @@ const App = {
       imagematch: { icon: '🖼️', label: 'Asociación de Imágenes' },
       pointclick: { icon: '🖱️', label: 'Juego Point & Click' },
       timeline:   { icon: '⏳', label: 'Línea de Tiempo' },
+      tablesort:  { icon: '🧰', label: 'Clasificación en Mesa' },
     };
     return map[type] || { icon: '📝', label: type };
   },
@@ -580,6 +581,7 @@ const App = {
       imagematch: ImageMatchActivity,
       pointclick: PointClickActivity,
       timeline:   TimelineActivity,
+      tablesort:  TableSortActivity,
     };
     const engine = engines[act.type];
     if (engine) engine.start(act);

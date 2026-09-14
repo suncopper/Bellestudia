@@ -105,15 +105,14 @@ const TableSortCreator = {
 
         <!-- 4. Banco de Elementos a Clasificar -->
         <div class="creator-section-card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
             <div>
-              <h3 class="section-card-title">🧩 Banco de Elementos</h3>
-              <p class="section-card-desc">Agrega los objetos o instrumentos que el estudiante deberá colocar en la mesa. Puedes subir fotos transparentes PNG y ajustar su tamaño.</p>
+              <h3 class="section-card-title">🧩 Banco de Elementos por Zona</h3>
+              <p class="section-card-desc">Organiza y añade elementos directamente en las columnas de cada zona. Puedes subir fotos transparentes PNG, recortarlas y definir su orden.</p>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" onclick="TableSortCreator._addItem()">+ Añadir Elemento</button>
           </div>
 
-          <div id="ts-items-list" style="margin-top:1rem; display:flex; flex-direction:column; gap:1rem;">
+          <div id="ts-items-list" style="margin-top:1rem;">
             ${this._renderItemsList()}
           </div>
         </div>
@@ -333,66 +332,95 @@ const TableSortCreator = {
   },
 
   _renderItemsList() {
-    if (!this._items.length) {
-      return `<p style="color:var(--text-muted); font-size:0.9rem;">No hay elementos en el banco.</p>`;
+    if (!this._zones.length) {
+      return `<p style="color:var(--text-muted); font-size:0.9rem;">Crea al menos una zona primero para agregar elementos al banco.</p>`;
     }
-    return this._items.map((it, idx) => {
-      const targetZone = this._zones.find(z => z.id === it.zoneId);
-      const isOrderedZone = targetZone?.ordered;
 
-      return `
-        <div class="question-card" style="padding:1rem;" data-item-id="${it.id}">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">
-            <div style="flex:1; min-width:250px;">
-              <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
-                <span style="font-weight:bold; color:var(--primary-light);">#${idx + 1}</span>
-                <input type="text" class="form-input" value="${Creator._e(it.name)}" placeholder="Nombre del elemento / instrumento"
-                       oninput="TableSortCreator._updateItemName('${it.id}', this.value)" style="flex:1; font-weight:500;">
+    return `
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem; align-items:start;">
+        ${this._zones.map(z => {
+          const zoneItems = this._items.filter(it => it.zoneId === z.id);
+          return `
+            <div class="ts-zone-column-card" style="background:var(--bg-surface); border:1.5px solid var(--border); border-radius:12px; padding:1rem; display:flex; flex-direction:column; gap:0.75rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">
+                <h4 style="margin:0; font-size:1rem; color:var(--primary-light); font-weight:700; display:flex; align-items:center; gap:0.4rem;">
+                  <span>📍 ${Creator._e(z.name)}</span>
+                  ${z.ordered ? '<span style="font-size:0.75rem; background:rgba(217,70,239,0.2); color:var(--primary-light); padding:2px 6px; border-radius:4px;">🔢 Ordenado</span>' : ''}
+                </h4>
+                <span class="stat-chip" style="font-size:0.78rem; padding:0.15rem 0.5rem;">${zoneItems.length} item${zoneItems.length === 1 ? '' : 's'}</span>
               </div>
 
-              <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-top:0.5rem;">
-                <div>
-                  <label style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.2rem;">Zona Destino Correcta:</label>
-                  <select class="form-input" onchange="TableSortCreator._updateItemZone('${it.id}', this.value)" style="padding:0.4rem; font-size:0.85rem;">
-                    ${this._zones.map(z => `<option value="${z.id}" ${it.zoneId === z.id ? 'selected' : ''}>${Creator._e(z.name)} ${z.ordered ? '(En orden)' : ''}</option>`).join('')}
-                  </select>
-                </div>
-
-                ${isOrderedZone ? `
-                <div>
-                  <label style="font-size:0.8rem; color:var(--primary-light); display:block; margin-bottom:0.2rem;">Posición en Secuencia (Orden):</label>
-                  <input type="number" class="form-input" value="${it.order || 1}" min="1" max="50" style="width:70px; padding:0.4rem;"
-                         oninput="TableSortCreator._updateItemOrder('${it.id}', this.value)">
-                </div>` : ''}
-
-                ${it.image ? `
-                <div>
-                  <label style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.2rem;">Tamaño de Imagen (px):</label>
-                  <input type="number" class="form-input" value="${it.imgSize || 120}" min="40" max="300" style="width:80px; padding:0.4rem;"
-                         oninput="TableSortCreator._updateItemImgSize('${it.id}', this.value)">
-                </div>` : ''}
+              <!-- Lista de items en esta zona -->
+              <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                ${zoneItems.length === 0 ? `
+                  <div style="text-align:center; padding:1.5rem 0.5rem; border:1.5px dashed var(--border); border-radius:8px; color:var(--text-muted); font-size:0.85rem;">
+                    Sin elementos en esta zona
+                  </div>
+                ` : zoneItems.map((it, idx) => this._renderItemCard(it, z, idx)).join('')}
               </div>
+
+              <!-- Botón para añadir elemento directamente a esta zona -->
+              <button type="button" class="btn btn-secondary btn-sm" onclick="TableSortCreator._addItemToZone('${z.id}')" style="width:100%; margin-top:0.25rem; justify-content:center;">
+                + Añadir elemento a ${Creator._e(z.name)}
+              </button>
             </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  },
 
-            <!-- Imagen opcional del elemento -->
-            <div style="min-width:140px;">
-              <div class="item-image-area" style="margin:0;">
-                <div class="item-image-preview-wrapper" style="${it.image ? '' : 'display:none'}">
-                  ${it.image ? `<img src="${it.image}" class="item-img-tag" style="max-height:60px; object-fit:contain;">` : ''}
-                  <button class="btn-crop-img-overlay" type="button" onclick="TableSortCreator._cropItemImage('${it.id}', this)" title="Recortar imagen">✂️</button>
-                  <button class="btn-remove-img-overlay" type="button" onclick="TableSortCreator._removeItemImage('${it.id}')" title="Quitar imagen">✕</button>
-                </div>
-                <button class="btn btn-sm btn-ghost" type="button" onclick="TableSortCreator._uploadItemImage('${it.id}')" style="font-size:0.8rem; padding:0.3rem 0.6rem;">
-                  ${it.image ? '📷 Cambiar foto' : '📷 Foto opcional'}
-                </button>
-              </div>
-            </div>
-
-            <button type="button" class="btn-icon" onclick="TableSortCreator._removeItem('${it.id}')" title="Eliminar elemento">✕</button>
+  _renderItemCard(it, z, idx) {
+    return `
+      <div class="question-card" style="padding:0.85rem; margin:0; background:var(--bg-card);" data-item-id="${it.id}">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+          <span style="font-weight:bold; font-size:0.85rem; color:var(--primary-light);">#${idx + 1}</span>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            ${this._zones.length > 1 ? `
+              <select class="form-input" onchange="TableSortCreator._updateItemZone('${it.id}', this.value)" style="padding:0.2rem 0.4rem; font-size:0.75rem; width:auto;" title="Mover a otra zona">
+                ${this._zones.map(zn => `<option value="${zn.id}" ${it.zoneId === zn.id ? 'selected' : ''}>Mover a: ${Creator._e(zn.name)}</option>`).join('')}
+              </select>
+            ` : ''}
+            <button type="button" class="btn-icon" onclick="TableSortCreator._removeItem('${it.id}')" title="Eliminar elemento" style="width:26px; height:26px; font-size:0.8rem; min-width:26px;">✕</button>
           </div>
         </div>
-      `;
-    }).join('');
+
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+          <!-- Nombre del elemento -->
+          <input type="text" class="form-input" value="${Creator._e(it.name)}" placeholder="Nombre del elemento / instrumento"
+                 oninput="TableSortCreator._updateItemName('${it.id}', this.value)" style="font-weight:500; font-size:0.9rem; padding:0.4rem 0.6rem;">
+
+          <!-- Opciones de orden y tamaño de imagen -->
+          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            ${z.ordered ? `
+            <div style="display:flex; align-items:center; gap:0.25rem;">
+              <label style="font-size:0.75rem; color:var(--primary-light); white-space:nowrap;">Secuencia (Orden):</label>
+              <input type="number" class="form-input" value="${it.order || (idx + 1)}" min="1" max="50" style="width:55px; padding:0.25rem 0.4rem; font-size:0.8rem;"
+                     oninput="TableSortCreator._updateItemOrder('${it.id}', this.value)">
+            </div>` : ''}
+
+            ${it.image ? `
+            <div style="display:flex; align-items:center; gap:0.25rem;">
+              <label style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">Alt px:</label>
+              <input type="number" class="form-input" value="${it.imgSize || 120}" min="40" max="300" style="width:65px; padding:0.25rem 0.4rem; font-size:0.8rem;"
+                     oninput="TableSortCreator._updateItemImgSize('${it.id}', this.value)">
+            </div>` : ''}
+          </div>
+
+          <!-- Imagen opcional del elemento -->
+          <div class="item-image-area" style="margin-top:0.25rem;">
+            <div class="item-image-preview-wrapper" style="${it.image ? '' : 'display:none'}; max-width:100%; aspect-ratio:16/9; max-height:90px;">
+              ${it.image ? `<img src="${it.image}" class="item-img-tag" style="max-height:80px; object-fit:contain;">` : ''}
+              <button class="btn-crop-img-overlay" type="button" onclick="TableSortCreator._cropItemImage('${it.id}', this)" title="Recortar imagen">✂️</button>
+              <button class="btn-remove-img-overlay" type="button" onclick="TableSortCreator._removeItemImage('${it.id}')" title="Quitar imagen">✕</button>
+            </div>
+            <button class="btn btn-sm btn-ghost" type="button" onclick="TableSortCreator._uploadItemImage('${it.id}')" style="font-size:0.78rem; padding:0.3rem 0.5rem; width:100%; justify-content:center;">
+              ${it.image ? '📷 Cambiar foto' : '📷 Foto opcional'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   },
 
   _cropItemImage(id, btn) {
@@ -590,19 +618,23 @@ const TableSortCreator = {
     }
   },
 
-  _addItem() {
-    const defaultZone = this._zones[0]?.id || '';
-    const sameZoneItems = this._items.filter(i => i.zoneId === defaultZone);
+  _addItem(zoneId) {
+    const targetZoneId = zoneId || this._zones[0]?.id || '';
+    const sameZoneItems = this._items.filter(i => i.zoneId === targetZoneId);
 
     this._items.push({
       id: App.uid(),
       name: `Elemento ${this._items.length + 1}`,
       image: '',
       imgSize: 120,
-      zoneId: defaultZone,
+      zoneId: targetZoneId,
       order: sameZoneItems.length + 1
     });
     document.getElementById('ts-items-list').innerHTML = this._renderItemsList();
+  },
+
+  _addItemToZone(zoneId) {
+    this._addItem(zoneId);
   },
 
   _removeItem(id) {
